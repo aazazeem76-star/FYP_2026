@@ -1,0 +1,537 @@
+﻿{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Camera Management - FRA System{% endblock %}
+
+{% block extra_css %}
+<style>
+    .camera-card {
+        background: linear-gradient(135deg, #1e1e2e 0%, #2d2d44 100%);
+        border: 1px solid rgba(99, 102, 241, 0.2);
+        border-radius: 16px;
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .camera-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 12px 30px rgba(99, 102, 241, 0.15);
+    }
+    .stat-card {
+        background: linear-gradient(135deg, #4F46E5, #7C3AED);
+        border-radius: 16px;
+        color: white;
+        padding: 1.5rem;
+    }
+    .stat-card.green { background: linear-gradient(135deg, #059669, #10B981); }
+    .stat-card.orange { background: linear-gradient(135deg, #D97706, #F59E0B); }
+    .badge-active {
+        background: linear-gradient(135deg, #059669, #10B981);
+        color: white;
+        padding: 0.35em 0.8em;
+        border-radius: 50px;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+    .badge-inactive {
+        background: linear-gradient(135deg, #6B7280, #9CA3AF);
+        color: white;
+        padding: 0.35em 0.8em;
+        border-radius: 50px;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+    .type-badge {
+        background: rgba(99, 102, 241, 0.15);
+        color: #818CF8;
+        border: 1px solid rgba(99, 102, 241, 0.3);
+        padding: 0.25em 0.7em;
+        border-radius: 50px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+    .action-btn {
+        border-radius: 8px;
+        padding: 0.35rem 0.75rem;
+        font-size: 0.8rem;
+        font-weight: 500;
+        border: none;
+        cursor: pointer;
+        transition: opacity 0.2s, transform 0.1s;
+    }
+    .action-btn:hover { opacity: 0.85; transform: translateY(-1px); }
+    .btn-edit   { background: rgba(99,102,241,0.15); color: #818CF8; }
+    .btn-toggle-on  { background: rgba(5,150,105,0.15); color: #10B981; }
+    .btn-toggle-off { background: rgba(245,158,11,0.15); color: #F59E0B; }
+    .btn-test   { background: rgba(6,182,212,0.15); color: #22D3EE; }
+    .btn-delete { background: rgba(239,68,68,0.15); color: #F87171; }
+    .page-header {
+        background: linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%);
+        border-radius: 20px;
+        padding: 2rem;
+        color: white;
+        margin-bottom: 2rem;
+    }
+    .table-dark-custom { background: #1e1e2e; border-radius: 16px; overflow: hidden; }
+    .table-dark-custom thead { background: rgba(99,102,241,0.2); }
+    .table-dark-custom thead th { color: #A5B4FC; font-weight: 600; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em; border: none; padding: 1rem 1.2rem; }
+    .table-dark-custom tbody td { border-color: rgba(255,255,255,0.06); padding: 1rem 1.2rem; vertical-align: middle; }
+    .table-dark-custom tbody tr:hover { background: rgba(99,102,241,0.06); }
+    .modal-content { background: #1e1e2e; border: 1px solid rgba(99,102,241,0.3); border-radius: 16px; }
+    .modal-header { border-bottom: 1px solid rgba(255,255,255,0.08); }
+    .modal-footer { border-top: 1px solid rgba(255,255,255,0.08); }
+    .form-control, .form-select {
+        background: #2d2d44;
+        border: 1px solid rgba(99,102,241,0.3);
+        color: #E2E8F0;
+        border-radius: 10px;
+    }
+    .form-control:focus, .form-select:focus {
+        background: #2d2d44;
+        border-color: #4F46E5;
+        color: #E2E8F0;
+        box-shadow: 0 0 0 3px rgba(99,102,241,0.15);
+    }
+    .form-label { color: #A5B4FC; font-weight: 500; font-size: 0.9rem; }
+    .form-control::placeholder { color: #6B7280; }
+    .empty-state { text-align: center; padding: 4rem 2rem; color: #6B7280; }
+    .empty-state i { font-size: 4rem; color: rgba(99,102,241,0.3); margin-bottom: 1rem; }
+    #testResult { border-radius: 10px; margin-top: 0.75rem; display: none; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4">
+
+    <!-- Page Header -->
+    <div class="page-header d-flex justify-content-between align-items-center flex-wrap gap-3">
+        <div>
+            <h1 class="mb-1 fw-bold fs-3"><i class="fas fa-video me-2"></i>Camera Management</h1>
+            <p class="mb-0 opacity-75">Configure and manage cameras for face &amp; retina recognition</p>
+        </div>
+        <button class="btn btn-light fw-semibold px-4" id="addCameraBtn" onclick="openAddModal()">
+            <i class="fas fa-plus me-2"></i>Add Camera
+        </button>
+    </div>
+
+    <!-- Stats Row -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="stat-card">
+                <div class="d-flex align-items-center gap-3">
+                    <i class="fas fa-video fa-2x opacity-75"></i>
+                    <div>
+                        <div class="fs-2 fw-bold">{{ total_cameras }}</div>
+                        <div class="opacity-75 small">Total Cameras</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="stat-card green">
+                <div class="d-flex align-items-center gap-3">
+                    <i class="fas fa-circle-check fa-2x opacity-75"></i>
+                    <div>
+                        <div class="fs-2 fw-bold">{{ active_cameras }}</div>
+                        <div class="opacity-75 small">Active Cameras</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="stat-card orange">
+                <div class="d-flex align-items-center gap-3">
+                    <i class="fas fa-circle-xmark fa-2x opacity-75"></i>
+                    <div>
+                        <div class="fs-2 fw-bold">{{ total_cameras|add:"-"|add:active_cameras }}</div>
+                        <div class="opacity-75 small">Inactive Cameras</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Camera Table -->
+    <div class="table-dark-custom shadow">
+        {% if cameras %}
+        <table class="table table-hover mb-0" id="cameraTable">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Camera Name</th>
+                    <th>Location</th>
+                    <th>Type</th>
+                    <th>URL / Device</th>
+                    <th>Resolution</th>
+                    <th>FPS</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="cameraTableBody">
+                {% for cam in cameras %}
+                <tr id="camera-row-{{ cam.id }}">
+                    <td class="text-muted small">{{ forloop.counter }}</td>
+                    <td class="fw-semibold">
+                        <i class="fas fa-camera me-2 text-indigo-400" style="color:#818CF8"></i>
+                        {{ cam.name }}
+                    </td>
+                    <td>
+                        <i class="fas fa-location-dot me-1 text-muted"></i>{{ cam.location|default:"â€”" }}
+                    </td>
+                    <td><span class="type-badge">{{ cam.get_camera_type_display }}</span></td>
+                    <td>
+                        <code style="background:rgba(99,102,241,0.1);padding:2px 8px;border-radius:6px;font-size:0.8rem;color:#A5B4FC;">
+                            {{ cam.camera_url }}
+                        </code>
+                    </td>
+                    <td class="text-muted small">{{ cam.get_resolution_display }}</td>
+                    <td class="text-muted small">{{ cam.fps }} fps</td>
+                    <td>
+                        {% if cam.is_active %}
+                        <span class="badge-active" id="status-badge-{{ cam.id }}">
+                            <i class="fas fa-circle me-1" style="font-size:0.5rem;vertical-align:middle"></i>Active
+                        </span>
+                        {% else %}
+                        <span class="badge-inactive" id="status-badge-{{ cam.id }}">
+                            <i class="fas fa-circle me-1" style="font-size:0.5rem;vertical-align:middle"></i>Inactive
+                        </span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="d-flex gap-1 flex-wrap">
+                            <button class="action-btn btn-edit" onclick="openEditModal({{ cam.id }})" title="Edit">
+                                <i class="fas fa-pen"></i>
+                            </button>
+                            <button class="action-btn {% if cam.is_active %}btn-toggle-on{% else %}btn-toggle-off{% endif %}"
+                                    onclick="toggleStatus({{ cam.id }}, this)" title="Toggle Status"
+                                    id="toggle-btn-{{ cam.id }}" data-active="{{ cam.is_active|yesno:'true,false' }}">
+                                <i class="fas {% if cam.is_active %}fa-toggle-on{% else %}fa-toggle-off{% endif %}"></i>
+                            </button>
+                            <button class="action-btn btn-test" onclick="testCamera({{ cam.id }}, this)" title="Test Connection">
+                                <i class="fas fa-plug"></i>
+                            </button>
+                            <button class="action-btn btn-delete" onclick="deleteCamera({{ cam.id }}, '{{ cam.name|escapejs }}')" title="Delete">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="empty-state">
+            <i class="fas fa-video-slash d-block"></i>
+            <h5 class="text-white mt-2">No cameras configured</h5>
+            <p class="mb-3">Get started by adding your first camera.</p>
+            <button class="btn btn-primary px-4" onclick="openAddModal()">
+                <i class="fas fa-plus me-2"></i>Add Camera
+            </button>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Add / Edit Camera Modal -->
+<div class="modal fade" id="cameraModal" tabindex="-1" aria-labelledby="cameraModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title text-white" id="cameraModalLabel">
+                    <i class="fas fa-video me-2" style="color:#818CF8"></i>
+                    <span id="modalTitleText">Add Camera</span>
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <input type="hidden" id="editCameraId" value="">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Camera Name <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="camName" placeholder="e.g. Main Entrance">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Location</label>
+                        <input type="text" class="form-control" id="camLocation" placeholder="e.g. Building A, Floor 2">
+                    </div>
+                    <div class="col-md-8">
+                        <label class="form-label">Camera URL / Device ID <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="camUrl" placeholder='e.g. 0 or rtsp://192.168.1.100/stream'>
+                        <div class="form-text text-muted small mt-1">Use <code>0</code> for default USB camera, or enter an RTSP/HTTP stream URL.</div>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Camera Type</label>
+                        <select class="form-select" id="camType">
+                            <option value="usb">USB Camera</option>
+                            <option value="ip">IP Camera</option>
+                            <option value="rtsp">RTSP Stream</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Resolution Width (px)</label>
+                        <input type="number" class="form-control" id="camWidth" value="640" min="160" max="3840">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Resolution Height (px)</label>
+                        <input type="number" class="form-control" id="camHeight" value="480" min="120" max="2160">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">FPS</label>
+                        <input type="number" class="form-control" id="camFps" value="30" min="1" max="120">
+                    </div>
+                    <div class="col-12">
+                        <div class="form-check form-switch mt-1">
+                            <input class="form-check-input" type="checkbox" id="camActive" checked>
+                            <label class="form-check-label text-white" for="camActive">Active (enable this camera)</label>
+                        </div>
+                    </div>
+                    <!-- Test connection inline -->
+                    <div class="col-12" id="testConnectionSection" style="display:none;">
+                        <button type="button" class="btn btn-outline-info btn-sm" onclick="testEditCamera()">
+                            <i class="fas fa-plug me-2"></i>Test Connection
+                        </button>
+                        <div id="testResult" class="alert mb-0 mt-2"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer gap-2">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary px-4" id="saveCameraBtn" onclick="saveCamera()">
+                    <i class="fas fa-save me-2"></i>Save Camera
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Toast Notification -->
+<div class="position-fixed bottom-0 end-0 p-3" style="z-index:9999">
+    <div id="toastNotif" class="toast align-items-center border-0" role="alert" aria-live="assertive" data-bs-autohide="true" data-bs-delay="3500">
+        <div class="d-flex">
+            <div class="toast-body fw-semibold" id="toastMsg"></div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const CSRF_TOKEN = '{{ csrf_token }}';
+const cameraModal = new bootstrap.Modal(document.getElementById('cameraModal'));
+const toast = new bootstrap.Toast(document.getElementById('toastNotif'));
+
+function showToast(msg, type = 'success') {
+    const el = document.getElementById('toastNotif');
+    el.className = `toast align-items-center border-0 text-white bg-${type === 'success' ? 'success' : type === 'error' ? 'danger' : 'warning'}`;
+    document.getElementById('toastMsg').textContent = msg;
+    toast.show();
+}
+
+function openAddModal() {
+    document.getElementById('modalTitleText').textContent = 'Add Camera';
+    document.getElementById('editCameraId').value = '';
+    document.getElementById('camName').value = '';
+    document.getElementById('camLocation').value = '';
+    document.getElementById('camUrl').value = '';
+    document.getElementById('camType').value = 'usb';
+    document.getElementById('camWidth').value = 640;
+    document.getElementById('camHeight').value = 480;
+    document.getElementById('camFps').value = 30;
+    document.getElementById('camActive').checked = true;
+    document.getElementById('testConnectionSection').style.display = 'none';
+    const testResultEl = document.getElementById('testResult');
+    if (testResultEl) testResultEl.style.display = 'none';
+    cameraModal.show();
+}
+
+function openEditModal(cameraId) {
+    fetch(`/api/camera/${cameraId}/edit/`, {
+        method: 'GET',
+        credentials: 'same-origin',
+        headers: {'X-CSRFToken': CSRF_TOKEN, 'X-Requested-With': 'XMLHttpRequest'}
+    })
+    .then(r => {
+        if (!r.ok) throw new Error('Server returned ' + r.status);
+        return r.json();
+    })
+    .then(data => {
+        if (data.success) {
+            const c = data.camera;
+            document.getElementById('modalTitleText').textContent = 'Edit Camera';
+            document.getElementById('editCameraId').value = c.id;
+            document.getElementById('camName').value = c.name;
+            document.getElementById('camLocation').value = c.location || '';
+            document.getElementById('camUrl').value = c.camera_url;
+            document.getElementById('camType').value = c.camera_type;
+            document.getElementById('camWidth').value = c.resolution_width;
+            document.getElementById('camHeight').value = c.resolution_height;
+            document.getElementById('camFps').value = c.fps;
+            document.getElementById('camActive').checked = c.is_active;
+            document.getElementById('testConnectionSection').style.display = 'block';
+            document.getElementById('testResult').style.display = 'none';
+            cameraModal.show();
+        } else {
+            showToast(data.message || 'Failed to load camera data.', 'error');
+        }
+    })
+    .catch(err => showToast('Error loading camera: ' + err.message, 'error'));
+}
+
+function saveCamera() {
+    const id = document.getElementById('editCameraId').value;
+    const name = document.getElementById('camName').value.trim();
+    const url = document.getElementById('camUrl').value.trim();
+
+    if (!name) { showToast('Camera name is required.', 'warning'); return; }
+    if (!url)  { showToast('Camera URL/device ID is required.', 'warning'); return; }
+
+    const payload = {
+        name: name,
+        location: document.getElementById('camLocation').value.trim(),
+        camera_url: url,
+        camera_type: document.getElementById('camType').value,
+        is_active: document.getElementById('camActive').checked,
+        resolution_width: parseInt(document.getElementById('camWidth').value) || 640,
+        resolution_height: parseInt(document.getElementById('camHeight').value) || 480,
+        fps: parseInt(document.getElementById('camFps').value) || 30,
+    };
+
+    const endpoint = id ? `/api/camera/${id}/edit/` : '/api/camera/create/';
+    const btn = document.getElementById('saveCameraBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Saving...';
+
+    fetch(endpoint, {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: {'Content-Type': 'application/json', 'X-CSRFToken': CSRF_TOKEN, 'X-Requested-With': 'XMLHttpRequest'},
+        body: JSON.stringify(payload)
+    })
+    .then(r => {
+        if (!r.ok) throw new Error('Server returned ' + r.status);
+        return r.json();
+    })
+    .then(data => {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-save me-2"></i>Save Camera';
+        if (data.success) {
+            showToast(data.message, 'success');
+            cameraModal.hide();
+            setTimeout(() => location.reload(), 800);
+        } else {
+            showToast(data.message || 'Save failed.', 'error');
+        }
+    })
+    .catch(err => {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-save me-2"></i>Save Camera';
+        showToast('Error saving camera: ' + err.message, 'error');
+    });
+}
+
+function toggleStatus(cameraId, btn) {
+    btn.disabled = true;
+    fetch(`/api/camera/${cameraId}/toggle-status/`, {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: {'X-CSRFToken': CSRF_TOKEN, 'X-Requested-With': 'XMLHttpRequest'}
+    })
+    .then(r => r.json())
+    .then(data => {
+        btn.disabled = false;
+        if (data.success) {
+            showToast(data.message, 'success');
+            const badge = document.getElementById('status-badge-' + cameraId);
+            if (data.is_active) {
+                badge.className = 'badge-active';
+                badge.innerHTML = '<i class="fas fa-circle me-1" style="font-size:0.5rem;vertical-align:middle"></i>Active';
+                btn.className = 'action-btn btn-toggle-on';
+                btn.innerHTML = '<i class="fas fa-toggle-on"></i>';
+            } else {
+                badge.className = 'badge-inactive';
+                badge.innerHTML = '<i class="fas fa-circle me-1" style="font-size:0.5rem;vertical-align:middle"></i>Inactive';
+                btn.className = 'action-btn btn-toggle-off';
+                btn.innerHTML = '<i class="fas fa-toggle-off"></i>';
+            }
+        } else {
+            showToast(data.message || 'Toggle failed.', 'error');
+        }
+    })
+    .catch(() => { btn.disabled = false; showToast('Network error.', 'error'); });
+}
+
+function testCamera(cameraId, btn) {
+    btn.disabled = true;
+    const orig = btn.innerHTML;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+    fetch(`/api/camera/${cameraId}/test/`, {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: {'X-CSRFToken': CSRF_TOKEN, 'X-Requested-With': 'XMLHttpRequest'}
+    })
+    .then(r => r.json())
+    .then(data => {
+        btn.disabled = false;
+        btn.innerHTML = orig;
+        showToast(data.message, data.success ? 'success' : 'error');
+    })
+    .catch(err => { btn.disabled = false; btn.innerHTML = orig; showToast('Test error: ' + err.message, 'error'); });
+}
+
+function testEditCamera() {
+    const id = document.getElementById('editCameraId').value;
+    if (!id) { showToast('Save the camera first before testing.', 'warning'); return; }
+    const resultDiv = document.getElementById('testResult');
+    resultDiv.style.display = 'none';
+    fetch(`/api/camera/${id}/test/`, {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: {'X-CSRFToken': CSRF_TOKEN, 'X-Requested-With': 'XMLHttpRequest'}
+    })
+    .then(r => r.json())
+    .then(data => {
+        resultDiv.style.display = 'block';
+        resultDiv.className = `alert ${data.success ? 'alert-success' : 'alert-danger'} mb-0 mt-2`;
+        resultDiv.innerHTML = `<i class="fas fa-${data.success ? 'check-circle' : 'exclamation-circle'} me-2"></i>${data.message}`;
+    })
+    .catch(() => {
+        resultDiv.style.display = 'block';
+        resultDiv.className = 'alert alert-danger mb-0 mt-2';
+        resultDiv.innerHTML = '<i class="fas fa-exclamation-circle me-2"></i>Network error during test.';
+    });
+}
+
+function deleteCamera(cameraId, cameraName) {
+    if (!confirm(`Delete camera "${cameraName}"?\n\nThis action cannot be undone.`)) return;
+    fetch(`/api/camera/${cameraId}/delete/`, {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: {'X-CSRFToken': CSRF_TOKEN, 'X-Requested-With': 'XMLHttpRequest'}
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            showToast(data.message, 'success');
+            const row = document.getElementById('camera-row-' + cameraId);
+            if (row) {
+                row.style.opacity = '0';
+                row.style.transition = 'opacity 0.3s';
+                setTimeout(() => { row.remove(); checkEmptyTable(); }, 300);
+            }
+        } else {
+            showToast(data.message || 'Delete failed.', 'error');
+        }
+    })
+    .catch(() => showToast('Network error deleting camera.', 'error'));
+}
+
+function checkEmptyTable() {
+    const tbody = document.getElementById('cameraTableBody');
+    if (tbody && tbody.rows.length === 0) {
+        setTimeout(() => location.reload(), 500);
+    }
+}
+</script>
+{% endblock %}
+

@@ -1,0 +1,275 @@
+{% extends 'base.html' %}
+{% block title %}Enroll Students - {{ subject.name }}{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-11">
+            <div class="card border-0 shadow rounded-4 enroll-card">
+
+                <!-- Header -->
+                <div class="card-header border-0 px-4 py-4 rounded-top-4"
+                     style="background:linear-gradient(135deg,#667eea,#764ba2);">
+                    <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+                        <div>
+                            <h3 class="fw-bold mb-1 text-white"><i class="fas fa-users-cog me-2"></i>Enroll Students</h3>
+                            <div class="d-flex flex-wrap gap-2 mt-2">
+                                <span class="badge rounded-pill px-3 py-2" style="background:rgba(255,255,255,.2);color:#fff;">
+                                    <i class="fas fa-book me-1"></i>{{ subject.code }} — {{ subject.name }}
+                                </span>
+                                {% if subject.department %}
+                                <span class="badge rounded-pill px-3 py-2" style="background:rgba(255,255,255,.2);color:#fff;">
+                                    <i class="fas fa-university me-1"></i>{{ subject.department.name }}
+                                </span>
+                                {% endif %}
+                                {% if subject.section %}
+                                <span class="badge rounded-pill px-3 py-2" style="background:rgba(255,255,255,.2);color:#fff;">
+                                    <i class="fas fa-layer-group me-1"></i>{{ subject.section.name }}
+                                </span>
+                                {% endif %}
+                                {% if subject.teacher %}
+                                <span class="badge rounded-pill px-3 py-2" style="background:rgba(255,255,255,.2);color:#fff;">
+                                    <i class="fas fa-chalkboard-teacher me-1"></i>{{ subject.teacher.get_full_name|default:subject.teacher.username }}
+                                </span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <a href="{% url 'subjects_list' %}" class="btn btn-light btn-sm rounded-pill px-4">
+                            <i class="fas fa-arrow-left me-2"></i>Back to Subjects
+                        </a>
+                    </div>
+                </div>
+
+                <div class="card-body p-4">
+                    <form method="post">
+                        {% csrf_token %}
+
+                        <!-- Search -->
+                        <div class="mb-4">
+                            <div class="position-relative">
+                                <i class="fas fa-search position-absolute top-50 start-0 translate-middle-y ms-3 text-muted"></i>
+                                <input type="text" id="studentSearch" class="form-control ps-5 py-3 rounded-3"
+                                    placeholder="Search students by name or username…">
+                            </div>
+                        </div>
+
+                        <!-- Section-matched students -->
+                        {% if section_students %}
+                        <div class="mb-4">
+                            <div class="d-flex align-items-center gap-2 mb-3 flex-wrap">
+                                {% if subject.section %}
+                                <span class="badge rounded-pill px-3 py-2" style="background:#d1fae5;color:#065f46;font-size:.85rem;">
+                                    <i class="fas fa-layer-group me-1"></i>{{ subject.section.name }} Section
+                                </span>
+                                <span class="text-muted small">({{ section_students.count }} student{{ section_students.count|pluralize }} — recommended)</span>
+                                {% else %}
+                                <span class="badge rounded-pill px-3 py-2 bg-primary text-white" style="font-size:.85rem;">
+                                    <i class="fas fa-users me-1"></i>All Students
+                                </span>
+                                {% endif %}
+                                <div class="ms-auto d-flex gap-2">
+                                    <button type="button" class="btn btn-sm btn-outline-success rounded-pill px-3" onclick="selectAll('section')">
+                                        <i class="fas fa-check-double me-1"></i>Select All
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-3" onclick="deselectAll('section')">
+                                        <i class="fas fa-times me-1"></i>Deselect All
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="row g-3" id="sectionStudentList">
+                                {% for student in section_students %}
+                                <div class="col-md-6 student-item" data-name="{{ student.first_name|lower }} {{ student.last_name|lower }}" data-user="{{ student.username|lower }}">
+                                    <div class="student-card p-3 d-flex align-items-center gap-3 section-card"
+                                         onclick="toggleCheck(this)">
+                                        <input class="form-check-input section-cb flex-shrink-0" type="checkbox"
+                                               name="students" value="{{ student.id }}" id="stu_s_{{ student.id }}"
+                                               {% if student in enrolled_students %}checked{% endif %}
+                                               onclick="event.stopPropagation();" style="width:1.3em;height:1.3em;">
+                                        <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0 text-white fw-bold"
+                                             style="width:42px;height:42px;background:linear-gradient(135deg,#667eea,#764ba2);font-size:.9rem;">
+                                            {{ student.first_name|first|upper }}{{ student.last_name|first|upper }}
+                                        </div>
+                                        <div class="overflow-hidden">
+                                            <div class="fw-semibold text-dark text-truncate">{{ student.first_name }} {{ student.last_name }}</div>
+                                            <small class="text-primary">@{{ student.username }}</small>
+                                            {% if student.student_id %}<small class="text-muted d-block">{{ student.student_id }}</small>{% endif %}
+                                        </div>
+                                        {% if student in enrolled_students %}
+                                        <span class="ms-auto badge rounded-pill bg-success text-white flex-shrink-0" style="font-size:.65rem;">Enrolled</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        {% if not section_students %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-user-slash fa-3x text-muted mb-3 opacity-50"></i>
+                            {% if subject.section %}
+                            <p class="text-muted">No approved students found in the <strong>{{ subject.section.name }}</strong> section.</p>
+                            <small class="text-muted">Students must be assigned to this section before they can be enrolled.</small>
+                            {% else %}
+                            <p class="text-muted">No approved students found in the system.</p>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+
+                        <!-- Submit -->
+                        <div class="d-flex justify-content-end gap-3 mt-4 pt-3 border-top">
+                            <a href="{% url 'subjects_list' %}" class="btn btn-outline-secondary px-4 py-2 rounded-pill">Cancel</a>
+                            <button type="submit" class="btn btn-primary px-5 py-2 rounded-pill">
+                                <i class="fas fa-save me-2"></i>Save Enrollment
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* ── Outer card lightning hover ─────────────────────────── */
+.enroll-card {
+    background: #fff;
+    border: 1.5px solid rgba(102,126,234,.15) !important;
+    border-radius: 20px !important;
+    transition: box-shadow .35s ease, border-color .35s ease, transform .35s ease;
+}
+.enroll-card:hover {
+    border-color: rgba(102,126,234,.55) !important;
+    box-shadow:
+        0 0 0 1px rgba(102,126,234,.3),
+        0 8px 48px rgba(102,126,234,.22),
+        0 2px 16px rgba(118,75,162,.18) !important;
+    transform: translateY(-3px);
+}
+
+/* ── Student card base ──────────────────────────────────── */
+.student-card {
+    background: #f9fafb;
+    border: 2px solid #e5e7eb;
+    cursor: pointer;
+    border-radius: 14px !important;
+    transition:
+        background .25s ease,
+        border-color .25s ease,
+        box-shadow .25s ease,
+        transform .25s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+/* shimmer layer */
+.student-card::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: linear-gradient(135deg, rgba(102,126,234,.0) 0%, rgba(118,75,162,.0) 100%);
+    border-radius: inherit;
+    transition: background .25s ease;
+    pointer-events: none;
+    z-index: 0;
+}
+.student-card > * { position: relative; z-index: 1; }
+
+/* ── Dark lightning hover ───────────────────────────────── */
+.student-card:hover {
+    background: #1a1d2e !important;
+    border-color: #667eea !important;
+    transform: translateY(-3px) scale(1.012);
+    box-shadow:
+        0 0 0 2px rgba(102,126,234,.35),
+        0 8px 32px rgba(102,126,234,.35),
+        0 2px 8px rgba(118,75,162,.3),
+        inset 0 1px 0 rgba(255,255,255,.08);
+}
+.student-card:hover::before {
+    background: linear-gradient(135deg, rgba(102,126,234,.18) 0%, rgba(118,75,162,.12) 100%);
+}
+/* text colour inversion on hover */
+.student-card:hover .fw-semibold  { color: #e2e8f0 !important; }
+.student-card:hover small.text-primary { color: #a5b4fc !important; }
+.student-card:hover small.text-muted   { color: #94a3b8 !important; }
+
+/* ── Selected states ────────────────────────────────────── */
+.student-card.selected {
+    border-color: #667eea !important;
+    background: linear-gradient(135deg, #eef2ff 0%, #f5f3ff 100%) !important;
+    box-shadow: 0 0 0 2px rgba(102,126,234,.25), 0 4px 16px rgba(102,126,234,.18);
+}
+.section-card.selected {
+    border-color: #10b981 !important;
+    background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%) !important;
+    box-shadow: 0 0 0 2px rgba(16,185,129,.25), 0 4px 16px rgba(16,185,129,.18);
+}
+
+/* selected + dark hover combo */
+.student-card.selected:hover {
+    background: #1a2e1a !important;
+    border-color: #34d399 !important;
+    box-shadow:
+        0 0 0 2px rgba(52,211,153,.4),
+        0 8px 32px rgba(16,185,129,.3),
+        inset 0 1px 0 rgba(255,255,255,.08);
+}
+.student-card.selected:hover .fw-semibold { color: #6ee7b7 !important; }
+
+/* ── Search bar ─────────────────────────────────────────── */
+#studentSearch {
+    border: 1.5px solid #e5e7eb;
+    border-radius: 12px;
+    transition: border-color .25s, box-shadow .25s, background .25s;
+    font-size: .95rem;
+}
+#studentSearch:hover {
+    border-color: #a5b4fc;
+    box-shadow: 0 2px 12px rgba(102,126,234,.12);
+}
+#studentSearch:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102,126,234,.18), 0 2px 12px rgba(102,126,234,.12);
+    outline: none;
+}
+
+/* ── Action buttons ─────────────────────────────────────── */
+.btn-outline-success:hover { box-shadow: 0 4px 16px rgba(16,185,129,.3); transform: translateY(-1px); }
+.btn-outline-danger:hover  { box-shadow: 0 4px 16px rgba(239,68,68,.3);  transform: translateY(-1px); }
+.btn-primary:hover         { box-shadow: 0 6px 24px rgba(102,126,234,.45); transform: translateY(-2px); }
+.btn-outline-secondary:hover { transform: translateY(-1px); }
+</style>
+
+<script>
+function toggleCheck(card) {
+    const cb = card.querySelector('input[type="checkbox"]');
+    cb.checked = !cb.checked;
+    updateCard(card, cb.checked);
+}
+function updateCard(card, checked) {
+    if (checked) card.classList.add('selected');
+    else card.classList.remove('selected');
+}
+document.querySelectorAll('.student-card').forEach(card => {
+    const cb = card.querySelector('input[type="checkbox"]');
+    if (cb.checked) card.classList.add('selected');
+    cb.addEventListener('change', () => updateCard(card, cb.checked));
+});
+function selectAll(group) {
+    document.querySelectorAll(group === 'section' ? '.section-cb' : '.other-cb').forEach(cb => {
+        cb.checked = true; updateCard(cb.closest('.student-card'), true);
+    });
+}
+function deselectAll(group) {
+    document.querySelectorAll(group === 'section' ? '.section-cb' : '.other-cb').forEach(cb => {
+        cb.checked = false; updateCard(cb.closest('.student-card'), false);
+    });
+}
+document.getElementById('studentSearch').addEventListener('input', function () {
+    const q = this.value.toLowerCase();
+    document.querySelectorAll('.student-item').forEach(item => {
+        item.style.display = (item.dataset.name.includes(q) || item.dataset.user.includes(q)) ? '' : 'none';
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,184 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sign In — Face Recognition Attendance System</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--p:#6366f1;--p2:#8b5cf6}
+body{font-family:'Inter',sans-serif;background:#07091a;color:#fff;min-height:100vh;display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative}
+
+/* Background */
+.orb{position:fixed;border-radius:50%;filter:blur(90px);opacity:.35;pointer-events:none}
+.orb1{width:550px;height:550px;background:var(--p);top:-180px;right:-120px;animation:fl 9s ease-in-out infinite}
+.orb2{width:400px;height:400px;background:var(--p2);bottom:-120px;left:-100px;animation:fl 7s ease-in-out infinite reverse}
+.orb3{width:200px;height:200px;background:#ec4899;bottom:30%;right:25%;animation:fl 12s ease-in-out infinite;opacity:.1}
+@keyframes fl{0%,100%{transform:translateY(0)}50%{transform:translateY(-30px)}}
+.bg-grid{position:fixed;inset:0;background-image:linear-gradient(rgba(99,102,241,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(99,102,241,.04) 1px,transparent 1px);background-size:60px 60px;pointer-events:none}
+
+/* Card */
+.login-wrap{position:relative;z-index:10;width:100%;max-width:460px;padding:1rem}
+.login-card{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.09);border-radius:24px;backdrop-filter:blur(20px);overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,.5)}
+
+/* Header */
+.card-head{padding:2.4rem 2.4rem 2rem;text-align:center;background:linear-gradient(135deg,rgba(99,102,241,.18),rgba(139,92,246,.12));border-bottom:1px solid rgba(255,255,255,.07);position:relative}
+.fp-icon{width:76px;height:76px;background:linear-gradient(135deg,var(--p),var(--p2));border-radius:20px;display:flex;align-items:center;justify-content:center;margin:0 auto 1.2rem;font-size:2.2rem;box-shadow:0 8px 32px rgba(99,102,241,.45);position:relative;overflow:hidden}
+.fp-icon::before{content:'';position:absolute;top:0;left:-75%;width:50%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.2),transparent);transform:skewX(-20deg);animation:sh 3s infinite}
+@keyframes sh{0%{left:-75%}100%{left:125%}}
+.card-title{font-size:1.6rem;font-weight:800;margin-bottom:.35rem;letter-spacing:-.02em}
+.card-sub{color:rgba(255,255,255,.45);font-size:.88rem}
+
+/* Status pills */
+.status-row{display:flex;justify-content:center;gap:.6rem;margin-top:1.2rem}
+.status-pill{display:flex;align-items:center;gap:.35rem;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.09);border-radius:50px;padding:.28rem .7rem;font-size:.7rem;color:rgba(255,255,255,.5)}
+.dot-g{width:6px;height:6px;background:#22c55e;border-radius:50%;animation:bk 1.8s infinite}
+@keyframes bk{0%,100%{opacity:1}50%{opacity:.2}}
+
+/* Body */
+.card-body-inner{padding:2.2rem 2.4rem 2.4rem}
+
+/* Alert */
+.custom-alert{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.25);border-radius:12px;padding:.85rem 1.1rem;font-size:.85rem;color:#fca5a5;margin-bottom:1.4rem;display:flex;align-items:center;gap:.6rem}
+.custom-alert-success{background:rgba(34,197,94,.1);border-color:rgba(34,197,94,.25);color:#86efac}
+
+/* Form */
+.field-label{font-size:.8rem;font-weight:600;color:rgba(255,255,255,.55);letter-spacing:.04em;text-transform:uppercase;margin-bottom:.55rem}
+.input-wrap{position:relative}
+.input-icon{position:absolute;left:1rem;top:50%;transform:translateY(-50%);color:rgba(255,255,255,.3);font-size:.9rem;pointer-events:none}
+.form-input{width:100%;background:rgba(255,255,255,.05);border:1.5px solid rgba(255,255,255,.1);border-radius:12px;padding:.85rem 1rem .85rem 2.75rem;color:#fff;font-size:.93rem;font-family:'Inter',sans-serif;transition:.3s;outline:none}
+.form-input::placeholder{color:rgba(255,255,255,.25)}
+.form-input:focus{border-color:var(--p);background:rgba(99,102,241,.08);box-shadow:0 0 0 3px rgba(99,102,241,.15)}
+.toggle-pwd{position:absolute;right:1rem;top:50%;transform:translateY(-50%);background:none;border:none;color:rgba(255,255,255,.3);cursor:pointer;padding:0;font-size:.9rem;transition:.2s}
+.toggle-pwd:hover{color:rgba(255,255,255,.7)}
+
+/* Forgot */
+.forgot-link{color:#a5b4fc;text-decoration:none;font-size:.8rem;font-weight:500;transition:.2s}
+.forgot-link:hover{color:#c084fc}
+
+/* Login btn */
+.btn-login{width:100%;background:linear-gradient(135deg,var(--p),var(--p2));color:#fff;border:none;padding:1rem;border-radius:12px;font-weight:700;font-size:.97rem;font-family:'Inter',sans-serif;cursor:pointer;transition:.3s;box-shadow:0 0 28px rgba(99,102,241,.4);position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center;gap:.5rem}
+.btn-login::before{content:'';position:absolute;top:0;left:-75%;width:50%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.18),transparent);transform:skewX(-20deg);animation:sh 2.8s infinite}
+.btn-login:hover{transform:translateY(-2px);box-shadow:0 0 50px rgba(99,102,241,.6)}
+
+/* Divider */
+.or-row{display:flex;align-items:center;gap:1rem;margin:1.4rem 0}
+.or-line{flex:1;height:1px;background:rgba(255,255,255,.08)}
+.or-text{color:rgba(255,255,255,.3);font-size:.78rem;font-weight:500}
+
+/* Bottom */
+.register-link{color:#a5b4fc;text-decoration:none;font-weight:600;transition:.2s}
+.register-link:hover{color:#c084fc}
+.back-link{display:inline-flex;align-items:center;gap:.4rem;color:rgba(255,255,255,.35);text-decoration:none;font-size:.82rem;transition:.2s;margin-top:1.8rem}
+.back-link:hover{color:rgba(255,255,255,.7)}
+</style>
+</head>
+<body>
+
+<!-- Background -->
+<div class="bg-grid"></div>
+<div class="orb orb1"></div>
+<div class="orb orb2"></div>
+<div class="orb orb3"></div>
+
+<div class="login-wrap">
+  <div class="login-card">
+
+    <!-- Header -->
+    <div class="card-head">
+      <div class="fp-icon"><i class="fas fa-fingerprint"></i></div>
+      <div class="card-title">Welcome Back</div>
+      <div class="card-sub">Sign in to your FRA account to continue</div>
+      <div class="status-row">
+        <div class="status-pill"><div class="dot-g"></div>System Online</div>
+        <div class="status-pill"><i class="fas fa-lock" style="color:#a5b4fc;font-size:.65rem"></i>Secured</div>
+      </div>
+    </div>
+
+    <!-- Body -->
+    <div class="card-body-inner">
+
+      {% if messages %}
+        {% for message in messages %}
+          <div class="custom-alert {% if 'success' in message.tags %}custom-alert-success{% endif %}">
+            <i class="fas {% if 'success' in message.tags %}fa-circle-check{% else %}fa-circle-exclamation{% endif %}"></i>
+            {{ message }}
+          </div>
+        {% endfor %}
+      {% endif %}
+
+      <form method="post" autocomplete="off">
+        {% csrf_token %}
+
+        <!-- Username -->
+        <div class="mb-4">
+          <div class="field-label"><i class="fas fa-user me-1"></i>Username</div>
+          <div class="input-wrap">
+            <i class="fas fa-user input-icon"></i>
+            <input type="text" id="username" name="username" class="form-input"
+                   placeholder="Enter your username" required autocomplete="username">
+          </div>
+        </div>
+
+        <!-- Password -->
+        <div class="mb-3">
+          <div class="field-label"><i class="fas fa-lock me-1"></i>Password</div>
+          <div class="input-wrap">
+            <i class="fas fa-lock input-icon"></i>
+            <input type="password" id="password" name="password" class="form-input"
+                   placeholder="Enter your password" required autocomplete="current-password">
+            <button type="button" class="toggle-pwd" onclick="togglePwd()" id="toggleBtn">
+              <i class="fas fa-eye" id="eyeIcon"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Forgot -->
+        <div class="text-end mb-4">
+          <a href="/password-reset/" class="forgot-link">
+            <i class="fas fa-key me-1"></i>Forgot password?
+          </a>
+        </div>
+
+        <!-- Submit -->
+        <button type="submit" class="btn-login">
+          <i class="fas fa-sign-in-alt"></i>Sign In
+        </button>
+      </form>
+
+      <div class="or-row"><div class="or-line"></div><span class="or-text">OR</span><div class="or-line"></div></div>
+
+      <div class="text-center" style="font-size:.88rem;color:rgba(255,255,255,.4)">
+        Don't have an account?&nbsp;
+        <a href="{% url 'register' %}" class="register-link">Create Account</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="text-center">
+    <a href="{% url 'index' %}" class="back-link">
+      <i class="fas fa-arrow-left"></i>Back to Home
+    </a>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+function togglePwd() {
+  const pwd = document.getElementById('password');
+  const icon = document.getElementById('eyeIcon');
+  if (pwd.type === 'password') {
+    pwd.type = 'text';
+    icon.classList.replace('fa-eye','fa-eye-slash');
+  } else {
+    pwd.type = 'password';
+    icon.classList.replace('fa-eye-slash','fa-eye');
+  }
+}
+</script>
+</body>
+</html>

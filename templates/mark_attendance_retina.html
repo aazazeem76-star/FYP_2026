@@ -1,0 +1,143 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Retina Recognition - FRA System{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="dashboard-card">
+                <div class="card-header">
+                    <h4 class="mb-0">
+                        <i class="fas fa-eye me-2"></i>Mark Attendance - Retina Recognition
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted mb-4">
+                        Position your eye close to the camera and click "Capture & Recognize" to mark your attendance.
+                    </p>
+
+                    <!-- Camera Preview -->
+                    <div class="camera-container mb-4">
+                        <video id="cameraVideo" autoplay playsinline></video>
+                        <div class="camera-overlay"></div>
+                        <canvas id="cameraCanvas" style="display: none;"></canvas>
+                    </div>
+
+                    <!-- Instructions -->
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <strong>Important Instructions:</strong>
+                        <ul class="mb-0 mt-2">
+                            <li>Ensure <strong>excellent lighting</strong> conditions</li>
+                            <li>Remove glasses and contact lenses</li>
+                            <li>Position your eye close to the camera</li>
+                            <li>Keep your eye open and still</li>
+                            <li>Higher security - May take longer to process</li>
+                        </ul>
+                    </div>
+
+                    <!-- Subject Selection (Optional) -->
+                    <div class="mb-4">
+                        <label for="subjectSelect" class="form-label">
+                            <i class="fas fa-book me-1"></i>Select Subject (Optional)
+                        </label>
+                        <select id="subjectSelect" class="form-select">
+                            <option value="">General Attendance</option>
+                            {% for subject in subjects %}
+                            <option value="{{ subject.id }}">{{ subject.name }} - {{ subject.code }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- Controls -->
+                    <div class="camera-controls">
+                        <button id="startCameraBtn" onclick="initializeCamera()" class="btn btn-primary btn-lg">
+                            <i class="fas fa-video me-2"></i>Start Camera
+                        </button>
+                        <button id="captureBtn" onclick="markAttendance()" class="btn btn-success btn-lg"
+                            style="display: none;">
+                            <i class="fas fa-camera me-2"></i>Capture & Recognize
+                        </button>
+                        <button id="stopCameraBtn" onclick="stopCameraAndReturn()" class="btn btn-danger btn-lg"
+                            style="display: none;">
+                            <i class="fas fa-stop me-2"></i>Stop Camera
+                        </button>
+                    </div>
+
+                    <div class="text-center mt-4">
+                        <a href="{% url 'dashboard' %}" class="text-muted">
+                            <i class="fas fa-arrow-left me-1"></i>Back to Dashboard
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recognition Status -->
+            <div id="recognitionStatus" class="mt-4" style="display: none;">
+                <div class="dashboard-card">
+                    <div class="card-body text-center">
+                        <div class="spinner-border text-success mb-3" role="status">
+                            <span class="visually-hidden">Processing...</span>
+                        </div>
+                        <h5>Recognizing your retina pattern...</h5>
+                        <p class="text-muted mb-0">Advanced biometric processing in progress...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let cameraActive = false;
+
+    async function initializeCamera() {
+        const success = await startCamera('cameraVideo', 'cameraCanvas');
+
+        if (success) {
+            cameraActive = true;
+            document.getElementById('startCameraBtn').style.display = 'none';
+            document.getElementById('captureBtn').style.display = 'inline-block';
+            document.getElementById('stopCameraBtn').style.display = 'inline-block';
+
+            // Add pulse animation to overlay
+            document.querySelector('.camera-overlay').classList.add('pulse');
+        }
+    }
+
+    async function markAttendance() {
+        if (!cameraActive) {
+            showAlert('warning', 'Please start the camera first');
+            return;
+        }
+
+        const subjectId = document.getElementById('subjectSelect').value;
+
+        // Show processing status
+        document.getElementById('recognitionStatus').style.display = 'block';
+
+        // Process retina recognition
+        await processRetinaRecognition(subjectId || null);
+
+        // Hide processing status
+        document.getElementById('recognitionStatus').style.display = 'none';
+    }
+
+    function stopCameraAndReturn() {
+        stopCamera();
+        cameraActive = false;
+        window.location.href = '{% url "dashboard" %}';
+    }
+
+    // Cleanup on page unload
+    window.addEventListener('beforeunload', () => {
+        if (cameraActive) {
+            stopCamera();
+        }
+    });
+</script>
+{% endblock %}

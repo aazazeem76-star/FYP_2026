@@ -1,0 +1,483 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Dataset & Training - FRA System{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <h2 class="gradient-text mb-4">
+                <i class="fas fa-database"></i> Dataset Creation & Model Training
+            </h2>
+
+            <!-- Dataset Statistics -->
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <div class="glass-card p-3 text-center">
+                        <i class="fas fa-images fa-2x mb-2 text-primary"></i>
+                        <h4>{{ total_face_samples }}</h4>
+                        <small class="text-muted">Face Samples</small>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="glass-card p-3 text-center">
+                        <i class="fas fa-eye fa-2x mb-2 text-info"></i>
+                        <h4>{{ total_retina_samples }}</h4>
+                        <small class="text-muted">Retina Samples</small>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="glass-card p-3 text-center">
+                        <i class="fas fa-users fa-2x mb-2 text-success"></i>
+                        <h4>{{ total_users_enrolled }}</h4>
+                        <small class="text-muted">Users Enrolled</small>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="glass-card p-3 text-center">
+                        <i class="fas fa-brain fa-2x mb-2 text-warning"></i>
+                        <h4>{{ model_accuracy }}%</h4>
+                        <small class="text-muted">Model Accuracy</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tabs -->
+            <ul class="nav nav-tabs mb-4" id="datasetTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="collect-tab" data-bs-toggle="tab" data-bs-target="#collect"
+                        type="button">
+                        <i class="fas fa-camera"></i> Collect Samples
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="datasets-tab" data-bs-toggle="tab" data-bs-target="#datasets"
+                        type="button">
+                        <i class="fas fa-folder"></i> Datasets
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="training-tab" data-bs-toggle="tab" data-bs-target="#training"
+                        type="button">
+                        <i class="fas fa-cogs"></i> Train Models
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="models-tab" data-bs-toggle="tab" data-bs-target="#models"
+                        type="button">
+                        <i class="fas fa-project-diagram"></i> Trained Models
+                    </button>
+                </li>
+            </ul>
+
+            <!-- Tab Content -->
+            <div class="tab-content" id="datasetTabContent">
+                <!-- Collect Samples Tab -->
+                <div class="tab-pane fade show active" id="collect" role="tabpanel">
+                    <div class="glass-card p-4">
+                        <h4 class="mb-4">Collect Biometric Samples</h4>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="card glass-card border-0 mb-3">
+                                    <div class="card-header bg-primary text-white">
+                                        <h5 class="mb-0"><i class="fas fa-user"></i> Face Sample Collection</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="mb-3">
+                                            <label class="form-label">Select User</label>
+                                            <select class="form-select" id="faceUserId">
+                                                <option value="">Choose user...</option>
+                                                {% for user in users %}
+                                                <option value="{{ user.id }}">{{ user.get_full_name }} ({{ user.username }})</option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label">Number of Samples</label>
+                                            <input type="number" class="form-control" id="faceSampleCount" value="50"
+                                                min="10" max="200">
+                                            <small class="text-muted">Recommended: 50-100 samples</small>
+                                        </div>
+                                        <div class="text-center mb-3">
+                                            <video id="faceVideo" width="100%" height="300" autoplay
+                                                style="border-radius: 10px; background: #000;"></video>
+                                            <canvas id="faceCanvas" style="display: none;"></canvas>
+                                        </div>
+                                        <div class="mb-3">
+                                            <div class="progress">
+                                                <div id="faceProgress" class="progress-bar" role="progressbar"
+                                                    style="width: 0%">0/0</div>
+                                            </div>
+                                        </div>
+                                        <button class="btn btn-primary w-100" id="startFaceCollection">
+                                            <i class="fas fa-play"></i> Start Face Collection
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="card border-0 mb-3" style="
+                                    background: rgba(255,255,255,0.03);
+                                    border: 1.5px dashed rgba(255,255,255,0.15) !important;
+                                    border-radius: 12px;
+                                    overflow: hidden;
+                                ">
+                                    <!-- Disabled header -->
+                                    <div class="card-header d-flex align-items-center justify-content-between" style="
+                                        background: rgba(13,202,240,0.10);
+                                        border-bottom: 1px solid rgba(13,202,240,0.15);
+                                    ">
+                                        <h5 class="mb-0" style="color:#718096;">
+                                            <i class="fas fa-eye me-2" style="opacity:.5;"></i>Retina Sample Collection
+                                        </h5>
+                                        <span style="
+                                            font-size:.7rem; font-weight:700; letter-spacing:.08em;
+                                            text-transform:uppercase;
+                                            background: linear-gradient(135deg,#667eea,#f093fb);
+                                            color:#fff; padding:.25rem .7rem;
+                                            border-radius:30px;
+                                            box-shadow: 0 0 14px rgba(240,147,251,.5);
+                                        ">
+                                            <i class="fas fa-clock me-1" style="font-size:.65rem;"></i>Coming Soon
+                                        </span>
+                                    </div>
+                                    <!-- Coming Soon body -->
+                                    <div class="card-body d-flex flex-column align-items-center justify-content-center py-5" style="min-height:340px;">
+                                        <div style="
+                                            width:72px; height:72px;
+                                            background: linear-gradient(135deg,rgba(102,126,234,.2),rgba(240,147,251,.2));
+                                            border-radius:50%;
+                                            display:flex; align-items:center; justify-content:center;
+                                            margin-bottom:1.25rem;
+                                            border: 2px solid rgba(102,126,234,.3);
+                                        ">
+                                            <i class="fas fa-eye fa-2x" style="color:rgba(102,126,234,.6);"></i>
+                                        </div>
+                                        <h5 style="color:#a0aec0; font-weight:600; margin-bottom:.5rem;">Retina Recognition</h5>
+                                        <p class="text-center mb-3" style="color:#718096; font-size:.88rem; max-width:240px;">
+                                            Retina biometric collection is under development and will be available in a future release.
+                                        </p>
+                                        <div style="
+                                            background: linear-gradient(135deg,rgba(102,126,234,.15),rgba(240,147,251,.1));
+                                            border: 1px solid rgba(102,126,234,.25);
+                                            border-radius: 10px;
+                                            padding: .6rem 1.25rem;
+                                            font-size:.8rem; color:#a0aec0;
+                                            display:flex; align-items:center; gap:.5rem;
+                                        ">
+                                            <i class="fas fa-rocket" style="color:#667eea;"></i>
+                                            <span>Feature in development &mdash; stay tuned!</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="alert alert-info mt-3">
+                            <i class="fas fa-info-circle"></i>
+                            <strong>Tips for Best Results:</strong>
+                            <ul class="mb-0 mt-2">
+                                <li>Ensure good lighting conditions</li>
+                                <li>Face the camera directly</li>
+                                <li>Vary head angles slightly during collection</li>
+                                <li>Keep a neutral expression</li>
+                                <li>Remove glasses for retina scanning</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Datasets Tab -->
+                <div class="tab-pane fade" id="datasets" role="tabpanel">
+                    <div class="glass-card p-4">
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <h4>Available Datasets</h4>
+                            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createDatasetModal">
+                                <i class="fas fa-plus"></i> Create Dataset
+                            </button>
+                        </div>
+
+                        {% if datasets %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Type</th>
+                                        <th>Samples</th>
+                                        <th>Status</th>
+                                        <th>Accuracy</th>
+                                        <th>Created</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for dataset in datasets %}
+                                    <tr>
+                                        <td>{{ dataset.name }}</td>
+                                        <td>
+                                            <span
+                                                class="badge bg-{% if dataset.dataset_type == 'face' %}primary{% else %}info{% endif %}">
+                                                {{ dataset.get_dataset_type_display }}
+                                            </span>
+                                        </td>
+                                        <td>{{ dataset.total_samples }}</td>
+                                        <td>
+                                            {% if dataset.is_trained %}
+                                            <span class="badge bg-success">Trained</span>
+                                            {% else %}
+                                            <span class="badge bg-warning">Not Trained</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ dataset.accuracy }}%</td>
+                                        <td>{{ dataset.created_at|date:"M d, Y" }}</td>
+                                        <td>
+                                            <button class="btn btn-sm btn-info action-btn" data-action="view"
+                                                data-id="{{ dataset.id }}">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-danger action-btn" data-action="delete"
+                                                data-id="{{ dataset.id }}">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-database fa-4x text-muted mb-3"></i>
+                            <h5>No Datasets Found</h5>
+                            <p class="text-muted">Create a dataset to start training models.</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Training Tab -->
+                <div class="tab-pane fade" id="training" role="tabpanel">
+                    <div class="glass-card p-4">
+                        <h4 class="mb-4">Train AI Models</h4>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="card glass-card border-0 mb-3">
+                                    <div class="card-header bg-primary text-white">
+                                        <h5 class="mb-0"><i class="fas fa-brain"></i> Face Recognition Model</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <form id="trainFaceForm">
+                                            <div class="mb-3">
+                                                <label class="form-label">Dataset</label>
+                                                <select class="form-select" name="dataset_id" required>
+                                                    <option value="">Select dataset...</option>
+                                                    {% for dataset in datasets %}
+                                                    {% if dataset.dataset_type == 'face' %}
+                                                    <option value="{{ dataset.id }}">{{ dataset.name }} ({{ dataset.total_samples }} samples)</option>
+                                                    {% endif %}
+                                                    {% endfor %}
+                                                </select>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label">Epochs</label>
+                                                <input type="number" class="form-control" name="epochs" value="10"
+                                                    min="10" max="200">
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label">Batch Size</label>
+                                                <input type="number" class="form-control" name="batch_size" value="5"
+                                                    min="5" max="128">
+                                            </div>
+                                            <div id="faceTrainingProgress" style="display: none;">
+                                                <div class="progress mb-2" style="height: 25px;">
+                                                    <div class="progress-bar progress-bar-striped progress-bar-animated bg-primary"
+                                                        role="progressbar" style="width: 0%">Training...</div>
+                                                </div>
+                                            </div>
+                                            <button type="submit" class="btn btn-primary w-100">
+                                                <i class="fas fa-play"></i> Start Training
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="card border-0 mb-3" style="
+                                    background: rgba(255,255,255,0.03);
+                                    border: 1.5px dashed rgba(255,255,255,0.15) !important;
+                                    border-radius: 12px; overflow: hidden;
+                                ">
+                                    <div class="card-header d-flex align-items-center justify-content-between" style="
+                                        background: rgba(13,202,240,0.10);
+                                        border-bottom: 1px solid rgba(13,202,240,0.15);
+                                    ">
+                                        <h5 class="mb-0" style="color:#718096;">
+                                            <i class="fas fa-brain me-2" style="opacity:.5;"></i>Retina Recognition Model
+                                        </h5>
+                                        <span style="
+                                            font-size:.7rem; font-weight:700; letter-spacing:.08em;
+                                            text-transform:uppercase;
+                                            background: linear-gradient(135deg,#667eea,#f093fb);
+                                            color:#fff; padding:.25rem .7rem; border-radius:30px;
+                                            box-shadow: 0 0 14px rgba(240,147,251,.5);
+                                        ">
+                                            <i class="fas fa-clock me-1" style="font-size:.65rem;"></i>Coming Soon
+                                        </span>
+                                    </div>
+                                    <div class="card-body d-flex flex-column align-items-center justify-content-center py-5" style="min-height:300px;">
+                                        <div style="
+                                            width:64px; height:64px;
+                                            background: linear-gradient(135deg,rgba(102,126,234,.2),rgba(240,147,251,.2));
+                                            border-radius:50%; display:flex; align-items:center; justify-content:center;
+                                            margin-bottom:1.25rem; border: 2px solid rgba(102,126,234,.3);
+                                        ">
+                                            <i class="fas fa-brain fa-2x" style="color:rgba(102,126,234,.6);"></i>
+                                        </div>
+                                        <h5 style="color:#a0aec0; font-weight:600; margin-bottom:.5rem;">Retina Model Training</h5>
+                                        <p class="text-center mb-3" style="color:#718096; font-size:.88rem; max-width:240px;">
+                                            Retina recognition model training will be available once the collection module is complete.
+                                        </p>
+                                        <div style="
+                                            background: linear-gradient(135deg,rgba(102,126,234,.15),rgba(240,147,251,.1));
+                                            border: 1px solid rgba(102,126,234,.25); border-radius:10px;
+                                            padding:.6rem 1.25rem; font-size:.8rem; color:#a0aec0;
+                                            display:flex; align-items:center; gap:.5rem;
+                                        ">
+                                            <i class="fas fa-rocket" style="color:#667eea;"></i>
+                                            <span>Feature in development &mdash; stay tuned!</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="alert alert-warning mt-3">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <strong>Note:</strong> Model training may take several minutes to hours depending on dataset
+                            size and hardware. Please do not close this page during training.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Trained Models Tab -->
+                <div class="tab-pane fade" id="models" role="tabpanel">
+                    <div class="glass-card p-4">
+                        <h4 class="mb-4">Trained Models</h4>
+
+                        {% if trained_models %}
+                        <div class="row">
+                            {% for model in trained_models %}
+                            <div class="col-md-6 mb-3">
+                                <div class="card glass-card border-0">
+                                    <div class="card-header bg-success text-white">
+                                        <h5 class="mb-0">
+                                            <i
+                                                class="fas fa-{% if model.dataset_type == 'face' %}user{% else %}eye{% endif %}"></i>
+                                            {{ model.name }}
+                                        </h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row">
+                                            <div class="col-6">
+                                                <p class="mb-2"><strong>Type:</strong> {{ model.get_dataset_type_display }}</p>
+                                                <p class="mb-2"><strong>Samples:</strong> {{ model.total_samples }}</p>
+                                                <p class="mb-2"><strong>Accuracy:</strong> {{ model.accuracy }}%</p>
+                                            </div>
+                                            <div class="col-6">
+                                                <p class="mb-2"><strong>Status:</strong>
+                                                    <span class="badge bg-success">Active</span>
+                                                </p>
+                                                <p class="mb-2"><strong>Trained:</strong> {{ model.updated_at|date:"M d,Y" }}</p>
+                                            </div>
+                                        </div>
+                                        <div class="mt-3">
+                                            <button class="btn btn-sm btn-primary action-btn" data-action="test"
+                                                data-id="{{ model.id }}">
+                                                <i class="fas fa-vial"></i> Test Model
+                                            </button>
+                                            <button class="btn btn-sm btn-warning action-btn" data-action="retrain"
+                                                data-id="{{ model.id }}">
+                                                <i class="fas fa-redo"></i> Retrain
+                                            </button>
+                                            <button class="btn btn-sm btn-info action-btn" data-action="export"
+                                                data-id="{{ model.id }}">
+                                                <i class="fas fa-download"></i> Export
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-brain fa-4x text-muted mb-3"></i>
+                            <h5>No Trained Models</h5>
+                            <p class="text-muted">Train a model using the datasets you've created.</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Create Dataset Modal -->
+<div class="modal fade" id="createDatasetModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content bg-dark">
+            <div class="modal-header">
+                <h5 class="modal-title">Create New Dataset</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="createDatasetForm">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Dataset Name</label>
+                        <input type="text" class="form-control" name="name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Type</label>
+                        <select class="form-select" name="dataset_type" required>
+                            <option value="face">Face Recognition</option>
+                            <option value="retina">Retina Recognition</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Description</label>
+                        <textarea class="form-control" name="description" rows="3"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Create Dataset</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+
+<style>
+/* Remove white/light hover flash on Dataset & Training tab buttons */
+#datasetTabs .nav-link:hover:not(.active) {
+    background-color: transparent !important;
+    border-color: transparent !important;
+    color: inherit;
+}
+#datasetTabs .nav-link:focus:not(.active) {
+    background-color: transparent !important;
+    border-color: transparent !important;
+}
+</style>
+
+<script src="{% static 'js/dataset_management.js' %}?v=2.1"></script>
+
+{% endblock %}

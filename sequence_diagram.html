@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sequence Diagram - AI Face Recognition Attendance</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10.6.1/dist/mermaid.min.js"></script>
+    <style>
+        /* Professional styling optimized for MS-Word screenshots */
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: #ffffff;
+            color: #000000;
+        }
+        .diagram-container {
+            background-color: #ffffff;
+            border: 1px solid #e5e7eb;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            border-radius: 8px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+        /* Hide scrollbars for a clean screenshot */
+        ::-webkit-scrollbar {
+            display: none;
+        }
+    </style>
+</head>
+<body class="min-h-screen p-8 flex flex-col items-center">
+    
+    <!-- Title Section (Perfect for Word docs) -->
+    <div class="w-full max-w-6xl mb-8 text-center border-b pb-6">
+        <h1 class="text-3xl font-bold text-gray-900 uppercase tracking-wide">System Sequence Diagram</h1>
+        <p class="text-lg text-gray-600 mt-2">Face Authentication & Attendance Marking Workflow</p>
+    </div>
+
+    <!-- Mermaid Diagram -->
+    <div class="w-full max-w-6xl diagram-container flex justify-center">
+        <div class="mermaid">
+            sequenceDiagram
+                autonumber
+                actor Student
+                participant UI as Web/Camera Interface
+                participant Django as Django Application Server
+                participant AI as Face Recognition Module
+                participant DB as Database (SQLite3)
+
+                note over Student, DB: Phase 1: Frame Capture & Submission
+                Student->>UI: Position face in front of camera
+                UI->>UI: Capture Video Frame
+                UI->>Django: POST Frame Data (Base64/Multipart)
+
+                note over Django, AI: Phase 2: AI Face Processing
+                Django->>AI: extract_face_encoding(frame)
+                activate AI
+                AI->>AI: apply_clahe() for lighting normalization
+                AI->>AI: detect_faces() via Haar Cascades
+                AI->>AI: preprocess_face() resize & normalize
+                AI-->>Django: Return 128D Face Encoding array
+                deactivate AI
+
+                note over Django, DB: Phase 3: Biometric Verification
+                Django->>DB: Query BiometricData for Enrolled Students
+                activate DB
+                DB-->>Django: Return Registered Encodings
+                deactivate DB
+                Django->>Django: Calculate similarity / Confidence Score
+                
+                alt Match Confidence > Threshold
+                    note over Django, DB: Phase 4: Record Attendance
+                    Django->>DB: Check LiveAttendanceSession validity
+                    Django->>DB: Create Attendance (status='present', locked=True)
+                    activate DB
+                    DB-->>Django: Save Success
+                    deactivate DB
+                    Django-->>UI: Return JSON {success: true, student_name: "..."}
+                    UI-->>Student: Display "Attendance Marked!" & Redirect
+                else Match Failed / No Face Detected
+                    Django-->>UI: Return JSON {success: false, error: "No Match"}
+                    UI-->>Student: Display "Authentication Failed, Try Again"
+                end
+        </div>
+    </div>
+
+    <!-- Instructions for the user -->
+    <div class="mt-4 text-sm text-gray-500 text-center max-w-2xl">
+        <p><strong>Pro Tip:</strong> To use this in MS-Word, adjust your browser zoom so the diagram fits your screen nicely, then use the <strong>Snipping Tool</strong> (Windows Key + Shift + S) to capture the diagram and paste it directly into your Word document.</p>
+    </div>
+
+    <script>
+        mermaid.initialize({
+            startOnLoad: true,
+            theme: 'default',
+            themeVariables: {
+                fontFamily: 'Inter, Arial, sans-serif',
+                fontSize: '15px',
+                actorBkg: '#f8fafc',
+                actorBorder: '#1e293b',
+                actorTextColor: '#0f172a',
+                signalColor: '#1e293b',
+                signalTextColor: '#0f172a',
+                sequenceNumberColor: '#ffffff',
+                noteBkgColor: '#e2e8f0',
+                noteBorderColor: '#cbd5e1',
+                noteTextColor: '#1e293b'
+            }
+        });
+    </script>
+</body>
+</html>

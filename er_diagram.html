@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ER Diagram - AI Face Recognition Attendance System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10.6.1/dist/mermaid.min.js"></script>
+    <style>
+        /* Professional styling optimized for MS-Word screenshots */
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: #ffffff;
+            color: #000000;
+        }
+        .diagram-container {
+            background-color: #ffffff;
+            border: 1px solid #e5e7eb;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            border-radius: 8px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+        /* Hide scrollbars for a clean screenshot */
+        ::-webkit-scrollbar {
+            display: none;
+        }
+    </style>
+</head>
+<body class="min-h-screen p-8 flex flex-col items-center">
+    
+    <!-- Title Section (Perfect for Word docs) -->
+    <div class="w-full max-w-6xl mb-8 text-center border-b pb-6">
+        <h1 class="text-3xl font-bold text-gray-900 uppercase tracking-wide">Entity-Relationship (ER) Diagram</h1>
+        <p class="text-lg text-gray-600 mt-2">Database Schema for Face Recognition Attendance System</p>
+    </div>
+
+    <!-- Mermaid Diagram -->
+    <div class="w-full max-w-6xl diagram-container flex justify-center">
+        <div class="mermaid">
+            erDiagram
+                %% Core Organization Entities
+                departments {
+                    int id PK
+                    string name
+                    string code
+                    text description
+                    datetime created_at
+                }
+                
+                sections {
+                    int id PK
+                    int department_id FK
+                    string name
+                    datetime created_at
+                }
+
+                %% User & Authentication
+                users {
+                    int id PK
+                    string username
+                    string role
+                    string student_id
+                    string employee_id
+                    int dept_id FK
+                    int section_id FK
+                    string phone
+                    text address
+                    boolean is_approved
+                    datetime created_at
+                }
+
+                %% Academic Entities
+                subjects {
+                    int id PK
+                    string code
+                    string name
+                    text description
+                    int teacher_id FK
+                    int department_id FK
+                    int section_id FK
+                    datetime created_at
+                }
+
+                %% Core Business Logic
+                attendance {
+                    int id PK
+                    int user_id FK
+                    int subject_id FK
+                    date date
+                    time time
+                    string status
+                    string recognition_type
+                    int marked_by_id FK
+                    float confidence_score
+                    boolean is_verified
+                    boolean is_locked
+                    datetime created_at
+                }
+
+                live_attendance_sessions {
+                    int id PK
+                    int subject_id FK
+                    int started_by_id FK
+                    datetime started_at
+                    boolean is_active
+                }
+
+                %% Biometric & AI Model Data
+                biometric_data {
+                    int id PK
+                    int user_id FK
+                    string biometric_type
+                    string image_path
+                    binary encoded_data
+                    boolean is_active
+                    datetime created_at
+                }
+
+                training_datasets {
+                    int id PK
+                    string name
+                    string dataset_type
+                    int total_samples
+                    boolean is_trained
+                    string model_path
+                    float accuracy
+                    datetime created_at
+                }
+
+                biometric_samples {
+                    int id PK
+                    int user_id FK
+                    int dataset_id FK
+                    string sample_type
+                    string image_path
+                    datetime created_at
+                }
+
+                %% System Data
+                cameras {
+                    int id PK
+                    string name
+                    string location
+                    string camera_url
+                    string camera_type
+                    boolean is_active
+                    int resolution_width
+                    int resolution_height
+                    int fps
+                }
+
+                system_logs {
+                    int id PK
+                    int user_id FK
+                    string log_type
+                    string action
+                    text description
+                    string ip_address
+                    datetime created_at
+                }
+
+                reports {
+                    int id PK
+                    string title
+                    string report_type
+                    date start_date
+                    date end_date
+                    int subject_id FK
+                    int generated_by_id FK
+                    string file_path
+                    datetime created_at
+                }
+
+                notifications {
+                    int id PK
+                    int user_id FK
+                    string notification_type
+                    string title
+                    text message
+                    string action_url
+                    boolean is_read
+                    datetime created_at
+                }
+
+                %% Relationships (Crow's Foot Notation)
+                departments ||--o{ sections : "has"
+                departments ||--o{ users : "contains"
+                departments ||--o{ subjects : "offers"
+                
+                sections ||--o{ users : "groups"
+                sections ||--o{ subjects : "scheduled_in"
+                
+                users ||--o{ biometric_data : "owns"
+                users ||--o{ biometric_samples : "provides"
+                users ||--o{ attendance : "marked_in"
+                users ||--o{ subjects : "teaches"
+                users ||--o{ live_attendance_sessions : "starts"
+                users ||--o{ system_logs : "generates"
+                users ||--o{ notifications : "receives"
+                
+                subjects ||--o{ attendance : "records"
+                subjects ||--o| live_attendance_sessions : "hosts"
+                subjects ||--o{ reports : "summarized_in"
+
+                training_datasets ||--o{ biometric_samples : "contains"
+        </div>
+    </div>
+
+    <!-- Instructions for the user -->
+    <div class="mt-4 text-sm text-gray-500 text-center max-w-2xl">
+        <p><strong>Pro Tip:</strong> To use this in MS-Word, adjust your browser zoom so the diagram fits your screen nicely, then use the <strong>Snipping Tool</strong> (Windows Key + Shift + S) to capture the diagram and paste it directly into your Word document.</p>
+    </div>
+
+    <script>
+        mermaid.initialize({
+            startOnLoad: true,
+            theme: 'default',
+            themeVariables: {
+                fontFamily: 'Inter, Arial, sans-serif',
+                fontSize: '14px',
+                primaryColor: '#ffffff',      /* White boxes for MS Word */
+                primaryTextColor: '#000000',  /* Black text */
+                primaryBorderColor: '#000000',/* Black borders */
+                lineColor: '#000000',         /* Black lines */
+                secondaryColor: '#f3f4f6',
+                tertiaryColor: '#ffffff'
+            },
+            er: {
+                layoutDirection: 'TB',
+                minEntityWidth: 100,
+                minEntityHeight: 75,
+                entityPadding: 15,
+                stroke: '#000000',
+                fill: '#ffffff'
+            }
+        });
+    </script>
+</body>
+</html>

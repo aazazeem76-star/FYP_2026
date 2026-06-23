@@ -1,0 +1,640 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Dashboard - FRA System{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="page-header mb-3">
+                <h1 class="page-title">
+                    <i class="fas fa-th-large me-2"></i>Dashboard
+                </h1>
+                <p class="text-muted mb-1">Welcome back, {{ user.get_full_name|default:user.username }}!</p>
+                {% if user.dept or user.section %}
+                <div class="d-flex flex-wrap gap-2 mt-1">
+                    {% if user.dept %}
+                    <span class="badge rounded-pill px-3 py-2" style="background:rgba(102,126,234,.18);color:#a5b4fc;border:1px solid rgba(102,126,234,.3);font-size:.78rem;">
+                        <i class="fas fa-university me-1"></i>{{ user.dept.name }}
+                    </span>
+                    {% endif %}
+                    {% if user.section %}
+                    <span class="badge rounded-pill px-3 py-2" style="background:rgba(17,153,142,.18);color:#38ef7d;border:1px solid rgba(17,153,142,.3);font-size:.78rem;">
+                        <i class="fas fa-layer-group me-1"></i>{{ user.section.name }}
+                    </span>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    {% if user.role == 'admin' %}
+    <!-- Admin Dashboard -->
+    <div class="row g-4 mb-4">
+        <div class="col-xl-3 col-md-6">
+            <div class="stat-card stat-card-primary">
+                <div class="stat-icon">
+                    <i class="fas fa-users"></i>
+                </div>
+                <div class="stat-content">
+                    <h3 class="stat-number">{{ total_users }}</h3>
+                    <p class="stat-label">Total Users</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-2 col-md-6">
+            <div class="stat-card stat-card-warning">
+                <div class="stat-icon">
+                    <i class="fas fa-clock"></i>
+                </div>
+                <div class="stat-content">
+                    <h3 class="stat-number">{{ pending_approvals }}</h3>
+                    <p class="stat-label">Pending Approvals</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+            <div class="stat-card stat-card-success">
+                <div class="stat-icon">
+                    <i class="fas fa-book"></i>
+                </div>
+                <div class="stat-content">
+                    <h3 class="stat-number">{{ total_subjects }}</h3>
+                    <p class="stat-label">Total Subjects</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-2 col-md-4">
+            <div class="stat-card stat-card-info">
+                <div class="stat-icon" style="width: 50px; height: 50px; font-size: 1.4rem;">
+                    <i class="fas fa-user-graduate"></i>
+                </div>
+                <div class="stat-content">
+                    <h3 class="stat-number" style="font-size: 1.5rem;">{{ today_student_attendance }}</h3>
+                    <p class="stat-label">Students Today</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-2 col-md-4">
+            <div class="stat-card stat-card-success">
+                <div class="stat-icon" style="width: 50px; height: 50px; font-size: 1.4rem; background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
+                    <i class="fas fa-chalkboard-teacher"></i>
+                </div>
+                <div class="stat-content">
+                    <h3 class="stat-number" style="font-size: 1.5rem;">{{ today_teacher_attendance }}</h3>
+                    <p class="stat-label">Teachers Today</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-12">
+            <div class="dashboard-card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-chart-line me-2"></i>Attendance Trend (Last 7 Days)
+                    </h5>
+                    <div class="text-muted small">Total system traffic</div>
+                </div>
+                <div class="card-body">
+                    <canvas id="attendanceChart" height="280"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Separated Activity Row -->
+    <div class="row g-4 mt-1">
+        <!-- Student Activity -->
+        <div class="col-lg-6">
+            <div class="dashboard-card h-100 border-start border-4 border-primary">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0 text-primary">
+                        <i class="fas fa-user-graduate me-2"></i>Recent Student Activity
+                    </h5>
+                    <span class="badge bg-primary-soft text-primary rounded-pill">Live Feed</span>
+                </div>
+                <div class="card-body">
+                    <div class="activity-list">
+                        {% for attendance in recent_student_attendance %}
+                        <div class="activity-item d-flex align-items-center p-2 mb-2 rounded hover-bg">
+                            <div class="activity-avatar me-3">
+                                <div class="avatar-circle bg-primary-soft text-primary">
+                                    {{ attendance.user.username|slice:":1"|upper }}
+                                </div>
+                            </div>
+                            <div class="activity-content flex-grow-1">
+                                <p class="mb-0 font-weight-600">{{ attendance.user.get_full_name|default:attendance.user.username }}</p>
+                                <small class="text-muted d-block">{{ attendance.subject.name|default:"General" }} • {{ attendance.subject.code|default:"" }}</small>
+                            </div>
+                            <div class="activity-meta text-end">
+                                <span class="badge bg-success-soft text-success mb-1" style="font-size: 0.65rem;">{{ attendance.get_status_display }}</span>
+                                <small class="text-muted d-block" style="font-size: 0.7rem;">{{ attendance.time|time:"g:i A" }}</small>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-user-clock fa-2x text-muted mb-2 opacity-50"></i>
+                            <p class="text-muted">No student activity recorded yet.</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Teacher Activity -->
+        <div class="col-lg-6">
+            <div class="dashboard-card h-100 border-start border-4 border-success">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0 text-success">
+                        <i class="fas fa-chalkboard-teacher me-2"></i>Recent Teacher Activity
+                    </h5>
+                    <span class="badge bg-success-soft text-success rounded-pill">Live Feed</span>
+                </div>
+                <div class="card-body">
+                    <div class="activity-list">
+                        {% for attendance in recent_teacher_attendance %}
+                        <div class="activity-item d-flex align-items-center p-2 mb-2 rounded hover-bg">
+                            <div class="activity-avatar me-3">
+                                <div class="avatar-circle bg-success-soft text-success">
+                                    {{ attendance.user.username|slice:":1"|upper }}
+                                </div>
+                            </div>
+                            <div class="activity-content flex-grow-1">
+                                <p class="mb-0 font-weight-600">{{ attendance.user.get_full_name|default:attendance.user.username }}</p>
+                                <small class="text-muted d-block">{{ attendance.subject.name|default:"General" }} • {{ attendance.subject.code|default:"" }}</small>
+                            </div>
+                            <div class="activity-meta text-end">
+                                <span class="badge bg-success-soft text-success mb-1" style="font-size: 0.65rem;">{{ attendance.get_status_display }}</span>
+                                <small class="text-muted d-block" style="font-size: 0.7rem;">{{ attendance.time|time:"g:i A" }}</small>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-user-clock fa-2x text-muted mb-2 opacity-50"></i>
+                            <p class="text-muted">No teacher activity recorded yet.</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% elif user.role == 'teacher' %}
+    <!-- Teacher Dashboard -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-4">
+            <div class="stat-card stat-card-primary">
+                <div class="stat-icon"><i class="fas fa-book-open"></i></div>
+                <div class="stat-content">
+                    <h3 class="stat-number">{{ my_subjects.count }}</h3>
+                    <p class="stat-label">My Subjects</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="stat-card stat-card-info">
+                <div class="stat-icon"><i class="fas fa-calendar-check"></i></div>
+                <div class="stat-content">
+                    <h3 class="stat-number">{{ today_attendance }}</h3>
+                    <p class="stat-label">Today's Student Attendance</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- MY OWN ATTENDANCE STATUS -->
+        <div class="col-md-4">
+            {% if teacher_today_marked %}
+            <div class="stat-card" style="background:linear-gradient(135deg,rgba(67,233,123,.18),rgba(56,249,215,.1));border:1px solid rgba(67,233,123,.3);">
+                <div class="stat-icon" style="background:rgba(67,233,123,.2);color:#43e97b;">
+                    <i class="fas fa-user-check"></i>
+                </div>
+                <div class="stat-content">
+                    <h3 class="stat-number" style="color:#43e97b;">Present</h3>
+                    <p class="stat-label">My Attendance — {{ teacher_today_marked.time|time:"g:i A" }}</p>
+                </div>
+            </div>
+            {% else %}
+            <a href="{% url 'mark_teacher_attendance_face' %}" style="text-decoration:none;">
+                <div class="stat-card" style="background:linear-gradient(135deg,rgba(252,92,101,.15),rgba(252,92,101,.05));border:1px solid rgba(252,92,101,.35);cursor:pointer;transition:transform .2s;" onmouseover="this.style.transform='translateY(-3px)'" onmouseout="this.style.transform='none'">
+                    <div class="stat-icon" style="background:rgba(252,92,101,.2);color:#fc5c65;">
+                        <i class="fas fa-user-clock"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 class="stat-number" style="color:#fc5c65;">Not Marked</h3>
+                        <p class="stat-label">Tap to Mark My Attendance</p>
+                    </div>
+                </div>
+            </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Quick Action: Mark My Attendance -->
+    {% if not teacher_today_marked %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="dashboard-card" style="background:linear-gradient(135deg,rgba(102,126,234,.12),rgba(118,75,162,.08));border:1px solid rgba(102,126,234,.25);">
+                <div class="card-body d-flex align-items-center justify-content-between flex-wrap gap-3" style="padding:1.25rem 1.5rem;">
+                    <div class="d-flex align-items-center gap-3">
+                        <div style="width:52px;height:52px;background:linear-gradient(135deg,#667eea,#764ba2);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.4rem;color:#fff;flex-shrink:0;">
+                            <i class="fas fa-face-smile"></i>
+                        </div>
+                        <div>
+                            <div style="font-weight:600;color:#e2e8f0;font-size:1rem;">You haven't marked your attendance today</div>
+                            <div style="font-size:.85rem;color:#718096;">Use face recognition to mark yourself as present</div>
+                        </div>
+                    </div>
+                    <a href="{% url 'mark_teacher_attendance_face' %}" class="btn btn-primary px-4" style="border-radius:10px;background:linear-gradient(135deg,#667eea,#764ba2);border:none;box-shadow:0 4px 15px rgba(102,126,234,.4);">
+                        <i class="fas fa-camera me-2"></i>Mark My Attendance
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="dashboard-card" style="background:linear-gradient(135deg,rgba(67,233,123,.1),rgba(56,249,215,.05));border:1px solid rgba(67,233,123,.25);">
+                <div class="card-body d-flex align-items-center gap-3" style="padding:1rem 1.5rem;">
+                    <i class="fas fa-check-circle fa-2x" style="color:#43e97b;flex-shrink:0;"></i>
+                    <div>
+                        <div style="font-weight:600;color:#43e97b;">Attendance Recorded for Today</div>
+                        <div style="font-size:.85rem;color:#718096;">
+                            Marked <strong>{{ teacher_today_marked.get_status_display }}</strong>
+                            at {{ teacher_today_marked.time|time:"g:i A" }}
+                            via {{ teacher_today_marked.get_recognition_type_display }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- My Subjects Table -->
+    <div class="row">
+        <div class="col-12">
+            <div class="dashboard-card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-book me-2"></i>My Subjects</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Subject Code</th>
+                                    <th>Subject Name</th>
+                                    <th>Department</th>
+                                    <th>Section</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for subject in my_subjects %}
+                                <tr>
+                                    <td><span class="badge bg-primary">{{ subject.code }}</span></td>
+                                    <td>{{ subject.name }}</td>
+                                    <td>
+                                        {% if subject.department %}
+                                        <span class="badge rounded-pill px-2 py-1" style="background:rgba(102,126,234,.2);color:#a5b4fc;border:1px solid rgba(102,126,234,.3);font-size:.7rem;">
+                                            <i class="fas fa-university me-1"></i>{{ subject.department.code }}
+                                        </span>
+                                        {% else %}<span class="text-muted">—</span>{% endif %}
+                                    </td>
+                                    <td>
+                                        {% if subject.section %}
+                                        <span class="badge rounded-pill px-2 py-1" style="background:rgba(17,153,142,.2);color:#38ef7d;border:1px solid rgba(17,153,142,.3);font-size:.7rem;">
+                                            <i class="fas fa-layer-group me-1"></i>{{ subject.section.name }}
+                                        </span>
+                                        {% else %}<span class="text-muted">—</span>{% endif %}
+                                    </td>
+                                    <td class="d-flex gap-2 flex-wrap">
+                                        <a href="{% url 'subject_detail' subject.id %}" class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-eye"></i> View
+                                        </a>
+                                        {% if subject.id in live_session_ids %}
+                                        <button class="btn btn-sm btn-danger live-btn"
+                                            data-subject-id="{{ subject.id }}"
+                                            data-subject-name="{{ subject.name }}"
+                                            data-action="stop">
+                                            <i class="fas fa-stop-circle"></i> Stop Attendance
+                                        </button>
+                                        {% else %}
+                                        <button class="btn btn-sm btn-success live-btn"
+                                            data-subject-id="{{ subject.id }}"
+                                            data-subject-name="{{ subject.name }}"
+                                            data-action="start">
+                                            <i class="fas fa-broadcast-tower"></i> Live Attendance
+                                        </button>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="5" class="text-center text-muted">No subjects assigned</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% else %}
+    <!-- Student Dashboard -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-4">
+            <div class="stat-card stat-card-primary">
+                <div class="stat-icon">
+                    <i class="fas fa-calendar-alt"></i>
+                </div>
+                <div class="stat-content">
+                    <h3 class="stat-number">{{ total_attendance }}</h3>
+                    <p class="stat-label">Total Days</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="stat-card stat-card-success">
+                <div class="stat-icon">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <div class="stat-content">
+                    <h3 class="stat-number">{{ present_count }}</h3>
+                    <p class="stat-label">Present</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="stat-card stat-card-info">
+                <div class="stat-icon">
+                    <i class="fas fa-percent"></i>
+                </div>
+                <div class="stat-content">
+                    <h3 class="stat-number">{{ attendance_percentage|floatformat:1 }}%</h3>
+                    <p class="stat-label">Attendance Rate</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-lg-6">
+            {% if live_session_active %}
+            <div class="dashboard-card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-camera me-2"></i>Mark Attendance
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted mb-4">Choose your preferred method to mark attendance</p>
+                    <div class="d-grid gap-3">
+                        <a href="{% url 'mark_attendance_face' %}" class="btn btn-lg btn-outline-primary">
+                            <i class="fas fa-face-smile me-2"></i>Face Recognition
+                        </a>
+                        <button class="btn btn-lg w-100 disabled" disabled
+                            style="
+                                background: rgba(255,255,255,0.04);
+                                border: 1.5px dashed rgba(255,255,255,0.18);
+                                color: #718096;
+                                cursor: not-allowed;
+                                position: relative;
+                                opacity: 1;
+                            ">
+                            <i class="fas fa-eye me-2" style="opacity:.5;"></i>
+                            <span style="opacity:.6;">Retina Recognition</span>
+                            <span style="
+                                position: absolute;
+                                right: 14px;
+                                top: 50%;
+                                transform: translateY(-50%);
+                                font-size: .7rem;
+                                font-weight: 700;
+                                letter-spacing: .08em;
+                                text-transform: uppercase;
+                                background: linear-gradient(135deg,#667eea,#f093fb);
+                                color: #fff;
+                                padding: .25rem .65rem;
+                                border-radius: 30px;
+                                box-shadow: 0 0 12px rgba(240,147,251,.45);
+                            ">
+                                <i class="fas fa-clock me-1" style="font-size:.65rem;"></i>Coming Soon
+                            </span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <div class="dashboard-card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-camera me-2"></i>Mark Attendance
+                    </h5>
+                </div>
+                <div class="card-body text-center py-5">
+                    <i class="fas fa-lock fa-3x text-muted mb-3"></i>
+                    <p class="text-muted">Attendance is currently <strong>closed</strong>.</p>
+                    <p class="text-muted small">Wait for your teacher to start a live attendance session.</p>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="col-lg-6">
+            <div class="dashboard-card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-history me-2"></i>Recent Attendance
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Subject</th>
+                                    <th>Status</th>
+                                    <th>Method</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for attendance in my_attendance %}
+                                <tr>
+                                    <td>{{ attendance.date }}</td>
+                                    <td>{{ attendance.subject.name|default:"General" }}</td>
+                                    <td>
+                                        <span
+                                            class="badge bg-{% if attendance.status == 'present' %}success{% elif attendance.status == 'late' %}warning{% else %}danger{% endif %}">
+                                            {{ attendance.get_status_display }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <small class="text-muted">
+                                            <i
+                                                class="fas fa-{% if attendance.recognition_type == 'face' %}face-smile{% elif attendance.recognition_type == 'retina' %}eye{% else %}hand{% endif %}"></i>
+                                        </small>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="4" class="text-center text-muted">No attendance records</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+
+{# ── Data islands: Django vars passed to JS without triggering the linter ── #}
+<script type="application/json" id="dash-live-ids">{{ live_subject_ids_json|default:"[]" }}</script>
+
+{% if user.role == 'admin' and week_attendance %}
+<script type="application/json" id="dash-chart-data">
+{"labels":[{% for item in week_attendance %}"{{ item.date|date:'M d' }}"{% if not forloop.last %},{% endif %}{% endfor %}],"counts":[{% for item in week_attendance %}{{ item.count }}{% if not forloop.last %},{% endif %}{% endfor %}]}
+</script>
+{% endif %}
+
+<script>
+    // {% if user.role == 'teacher' %}
+    // Live Attendance Button Handler
+    document.querySelectorAll('.live-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            const subjectId   = this.dataset.subjectId;
+            const subjectName = this.dataset.subjectName;
+            const action      = this.dataset.action;   // 'start' or 'stop'
+            const url         = `/api/live-attendance/${action}/${subjectId}/`;
+            const csrfToken   = document.cookie.match(/csrftoken=([^;]+)/)?.[1] || '';
+
+            // Disable while in-flight
+            this.disabled = true;
+
+            fetch(url, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': csrfToken,
+                    'Content-Type': 'application/json',
+                },
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    if (action === 'start') {
+                        // Switch to Stop Attendance
+                        this.dataset.action  = 'stop';
+                        this.className       = 'btn btn-sm btn-danger live-btn';
+                        this.innerHTML       = '<i class="fas fa-stop-circle"></i> Stop Attendance';
+                    } else {
+                        // Switch to Live Attendance
+                        this.dataset.action  = 'start';
+                        this.className       = 'btn btn-sm btn-success live-btn';
+                        this.innerHTML       = '<i class="fas fa-broadcast-tower"></i> Live Attendance';
+                    }
+                    // Show toast-style alert
+                    const msg = document.createElement('div');
+                    msg.className = 'alert alert-success alert-dismissible fade show position-fixed top-0 end-0 m-3';
+                    msg.style.zIndex = 9999;
+                    msg.innerHTML = `${data.message} <button type="button" class="btn-close" data-bs-dismiss="alert"></button>`;
+                    document.body.appendChild(msg);
+                    setTimeout(() => msg.remove(), 4000);
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            })
+            .catch(() => alert('Network error. Please try again.'))
+            .finally(() => { this.disabled = false; });
+        });
+    });
+    // {% endif %}
+
+    // {% if user.role == 'student' %}
+    // ── Student: poll every 10 s for live-session changes ──
+    (function () {
+        // Snapshot the server-rendered active state as a sorted JSON string
+        // so we compare the full set of active subjects, not just a boolean.
+        const _dashInitIds = JSON.parse(document.getElementById('dash-live-ids').textContent);
+        _dashInitIds.sort();
+        let _dashSnapshot = JSON.stringify(_dashInitIds);
+
+        function checkSession() {
+            fetch('/api/live-attendance/check/', { credentials: 'same-origin' })
+                .then(r => r.json())
+                .then(data => {
+                    const ids = (data.active_subject_ids || []).slice().sort();
+                    const snapshot = JSON.stringify(ids);
+                    if (snapshot !== _dashSnapshot) {
+                        location.reload();
+                    }
+                })
+                .catch(() => {}); // swallow network errors silently
+        }
+
+        // Poll every 10 seconds (was 3 s — too aggressive)
+        setInterval(checkSession, 10000);
+    })();
+    // {% endif %}
+
+    // {% if user.role == 'admin' and week_attendance %}
+    // Attendance Chart
+    const ctx = document.getElementById('attendanceChart');
+    if (ctx) {
+        const data = {
+            labels: JSON.parse(document.getElementById('dash-chart-data').textContent).labels,
+    datasets: [{
+        label: 'Attendance Count',
+        data: JSON.parse(document.getElementById('dash-chart-data').textContent).counts,
+        backgroundColor: 'rgba(102, 126, 234, 0.2)',
+            borderColor: 'rgba(102, 126, 234, 1)',
+                borderWidth: 2,
+                    fill: true,
+                        tension: 0.4
+            }]
+        };
+
+    new Chart(ctx, {
+        type: 'line',
+        data: data,
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+    }
+    // {% endif %}
+</script>
+{% endblock %}

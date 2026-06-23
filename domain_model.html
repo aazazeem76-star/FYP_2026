@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Domain Model - AI Face Recognition Attendance System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10.6.1/dist/mermaid.min.js"></script>
+    <style>
+        body { 
+            font-family: 'Outfit', sans-serif; 
+            background-color: #f8fafc;
+            background-image: 
+                linear-gradient(to right, #e2e8f0 1px, transparent 1px),
+                linear-gradient(to bottom, #e2e8f0 1px, transparent 1px);
+            background-size: 40px 40px;
+        }
+    </style>
+</head>
+<body class="min-h-screen p-8 text-gray-800">
+    <div class="max-w-7xl mx-auto bg-white rounded-3xl shadow-2xl overflow-hidden border border-gray-100">
+        
+        <!-- Header Section -->
+        <div class="bg-gradient-to-r from-blue-900 to-indigo-800 px-10 py-12 text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-4xl font-extrabold tracking-tight">System Domain Model</h1>
+                    <p class="text-indigo-200 mt-2 text-lg font-medium">Entity-Relationship & Architecture Diagram</p>
+                </div>
+                <div class="bg-white/10 p-4 rounded-2xl backdrop-blur-sm border border-white/20">
+                    <svg class="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mermaid Diagram Container -->
+        <div class="p-10 overflow-x-auto">
+            <div class="mermaid flex justify-center">
+                erDiagram
+                    %% ENTITIES
+                    Department {
+                        int id PK
+                        string name
+                        string code
+                        string description
+                    }
+                    
+                    Section {
+                        int id PK
+                        string name "Morning/Evening"
+                        int department_id FK
+                    }
+
+                    User {
+                        int id PK
+                        string username
+                        string role "student/teacher/admin"
+                        string student_id
+                        string employee_id
+                        int dept_id FK
+                        int section_id FK
+                        string phone
+                        boolean is_approved
+                    }
+
+                    Subject {
+                        int id PK
+                        string code
+                        string name
+                        int teacher_id FK
+                        int department_id FK
+                        int section_id FK
+                    }
+
+                    Attendance {
+                        int id PK
+                        date date
+                        time time
+                        string status "present/absent/late"
+                        string recognition_type
+                        float confidence_score
+                        boolean is_verified
+                        int user_id FK
+                        int subject_id FK
+                    }
+
+                    BiometricData {
+                        int id PK
+                        string biometric_type "face/retina"
+                        string image_path
+                        binary encoded_data
+                        boolean is_active
+                        int user_id FK
+                    }
+
+                    TrainingDataset {
+                        int id PK
+                        string name
+                        string dataset_type
+                        int total_samples
+                        boolean is_trained
+                        string model_path
+                        float accuracy
+                    }
+
+                    BiometricSample {
+                        int id PK
+                        string sample_type
+                        string image_path
+                        int user_id FK
+                        int dataset_id FK
+                    }
+
+                    LiveAttendanceSession {
+                        int id PK
+                        datetime started_at
+                        boolean is_active
+                        int subject_id FK
+                        int started_by_id FK
+                    }
+
+                    Camera {
+                        int id PK
+                        string name
+                        string camera_url
+                        string camera_type "usb/ip/rtsp"
+                        boolean is_active
+                    }
+
+                    %% RELATIONSHIPS
+                    Department ||--o{ Section : "has"
+                    Department ||--o{ User : "contains"
+                    Department ||--o{ Subject : "offers"
+                    Section ||--o{ User : "groups"
+                    Section ||--o{ Subject : "scheduled_in"
+                    
+                    User ||--o{ BiometricData : "owns"
+                    User ||--o{ BiometricSample : "provides"
+                    User ||--o{ Attendance : "marked_in"
+                    User ||--o{ Subject : "teaches (if teacher)"
+                    
+                    Subject ||--o{ Attendance : "records"
+                    Subject ||--o| LiveAttendanceSession : "hosts"
+                    User ||--o{ LiveAttendanceSession : "starts"
+
+                    TrainingDataset ||--o{ BiometricSample : "contains"
+
+                    %% Many-to-Many
+                    Subject }o--o{ User : "students_enrolled"
+            </div>
+        </div>
+
+        <!-- Footer / Legend -->
+        <div class="bg-gray-50 border-t border-gray-100 p-6">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-gray-600">
+                <div class="flex items-center"><span class="w-3 h-3 bg-blue-500 rounded-full mr-2"></span> ||--o{ One-to-Many</div>
+                <div class="flex items-center"><span class="w-3 h-3 bg-purple-500 rounded-full mr-2"></span> ||--o| One-to-One</div>
+                <div class="flex items-center"><span class="w-3 h-3 bg-green-500 rounded-full mr-2"></span> }o--o{ Many-to-Many</div>
+                <div class="flex items-center"><span class="w-3 h-3 bg-gray-500 rounded-full mr-2"></span> FK Foreign Key</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        mermaid.initialize({
+            startOnLoad: true,
+            theme: 'base',
+            themeVariables: {
+                primaryColor: '#eff6ff',
+                primaryTextColor: '#1e3a8a',
+                primaryBorderColor: '#3b82f6',
+                lineColor: '#94a3b8',
+                secondaryColor: '#f0fdfa',
+                tertiaryColor: '#f8fafc',
+                fontFamily: 'Outfit, sans-serif',
+                fontSize: '14px'
+            },
+            er: {
+                diagramPadding: 20,
+                layoutDirection: 'TB',
+                minEntityWidth: 150,
+                minEntityHeight: 75,
+                entityPadding: 15,
+                stroke: '#3b82f6',
+                fill: '#eff6ff'
+            }
+        });
+    </script>
+</body>
+</html>

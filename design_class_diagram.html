@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Design Class Diagram - AI Face Recognition Attendance System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10.6.1/dist/mermaid.min.js"></script>
+    <style>
+        /* Professional styling optimized for MS-Word screenshots */
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: #ffffff;
+            color: #000000;
+        }
+        .diagram-container {
+            background-color: #ffffff;
+            border: 1px solid #e5e7eb;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            border-radius: 8px;
+            padding: 2rem;
+        }
+        /* Hide scrollbars for a clean screenshot */
+        ::-webkit-scrollbar {
+            display: none;
+        }
+    </style>
+</head>
+<body class="min-h-screen p-8 flex flex-col items-center">
+    
+    <!-- Title Section (Perfect for Word docs) -->
+    <div class="w-full max-w-6xl mb-8 text-center border-b pb-6">
+        <h1 class="text-3xl font-bold text-gray-900 uppercase tracking-wide">System Design Class Diagram</h1>
+        <p class="text-lg text-gray-600 mt-2">AI-Based Face Recognition Attendance System</p>
+    </div>
+
+    <!-- Mermaid Diagram -->
+    <div class="w-full max-w-6xl diagram-container flex justify-center">
+        <div class="mermaid">
+            classDiagram
+                %% Core Logic Classes
+                class Department {
+                    +int id
+                    +string name
+                    +string code
+                    +string description
+                    +__str__() string
+                    +section_count() int
+                    +student_count() int
+                    +subject_count() int
+                }
+
+                class Section {
+                    +int id
+                    +string name
+                    +int department_id
+                    +__str__() string
+                    +student_count() int
+                    +subject_count() int
+                }
+
+                class User {
+                    +int id
+                    +string username
+                    +string role
+                    +string student_id
+                    +string employee_id
+                    +string phone
+                    +bool is_approved
+                    +int dept_id
+                    +int section_id
+                    +__str__() string
+                }
+
+                class Subject {
+                    +int id
+                    +string code
+                    +string name
+                    +string description
+                    +int teacher_id
+                    +__str__() string
+                    +student_count() int
+                }
+
+                class Attendance {
+                    +int id
+                    +date date
+                    +time time
+                    +string status
+                    +string recognition_type
+                    +float confidence_score
+                    +bool is_verified
+                    +bool is_locked
+                    +int user_id
+                    +int subject_id
+                    +__str__() string
+                }
+
+                %% AI / Hardware Components
+                class FaceRecognition {
+                    +string model_path
+                    +object model
+                    +dict label_encoder
+                    +tuple img_size
+                    +object face_cascade
+                    +load_cascade() void
+                    +apply_clahe(image) image
+                    +normalize_brightness(image) image
+                    +detect_faces(image) list
+                    +preprocess_face(face_img) array
+                    +extract_face_encoding(image) array
+                }
+
+                class TrainingDataset {
+                    +int id
+                    +string name
+                    +string dataset_type
+                    +int total_samples
+                    +bool is_trained
+                    +string model_path
+                    +float accuracy
+                    +update_sample_count() void
+                    +__str__() string
+                }
+
+                class Camera {
+                    +int id
+                    +string name
+                    +string camera_url
+                    +string camera_type
+                    +bool is_active
+                    +int resolution_width
+                    +int resolution_height
+                    +int fps
+                    +get_resolution_display() string
+                    +__str__() string
+                }
+
+                class LiveAttendanceSession {
+                    +int id
+                    +datetime started_at
+                    +bool is_active
+                    +int subject_id
+                    +int started_by_id
+                    +__str__() string
+                }
+
+                %% Relationships & Multiplicities
+                Department "1" *-- "*" Section : contains
+                Department "1" o-- "*" User : has_members
+                Section "1" o-- "*" User : categorizes
+                Department "1" o-- "*" Subject : offers
+                User "1" o-- "*" Subject : teaches (teacher)
+                Subject "*" -- "*" User : enrolled_in (students)
+                
+                User "1" *-- "*" Attendance : logs
+                Subject "1" *-- "*" Attendance : tracks
+                
+                TrainingDataset "1" ..> "1" FaceRecognition : generates_model_for
+                Subject "1" -- "0..1" LiveAttendanceSession : hosts
+                Camera "1" ..> "*" LiveAttendanceSession : provides_feed_for
+        </div>
+    </div>
+
+    <!-- Instructions for the user -->
+    <div class="mt-8 text-sm text-gray-500 text-center max-w-2xl">
+        <p><strong>Pro Tip:</strong> To use this in MS-Word, adjust your browser zoom so the diagram fits your screen nicely, then use the <strong>Snipping Tool</strong> (Windows Key + Shift + S) to capture the diagram and paste it directly into your Word document.</p>
+    </div>
+
+    <script>
+        mermaid.initialize({
+            startOnLoad: true,
+            theme: 'default',
+            themeVariables: {
+                fontFamily: 'Inter, Arial, sans-serif',
+                fontSize: '15px',
+                primaryColor: '#f3f4f6',      /* Light gray boxes */
+                primaryTextColor: '#111827',  /* Dark text */
+                primaryBorderColor: '#4b5563',/* Gray borders */
+                lineColor: '#1f2937'          /* Darker lines */
+            },
+            class: {
+                useMaxWidth: false
+            }
+        });
+    </script>
+</body>
+</html>

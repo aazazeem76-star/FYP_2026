@@ -1,0 +1,795 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Mark My Attendance — FRA System{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* ─── Hero ─────────────────────────────────────────────── */
+    .attend-hero {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 20px;
+        padding: 2rem 2.5rem;
+        color: #fff;
+        margin-bottom: 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 1.25rem;
+        box-shadow: 0 8px 32px rgba(102,126,234,0.35);
+    }
+    .attend-hero .hero-icon {
+        width: 68px; height: 68px;
+        background: rgba(255,255,255,0.18);
+        border-radius: 50%;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 1.9rem; flex-shrink: 0;
+    }
+    .attend-hero h1 { font-size: 1.6rem; font-weight: 700; margin: 0; }
+    .attend-hero p  { margin: 0; opacity: .85; font-size: .95rem; }
+
+    /* ─── Cards ─────────────────────────────────────────────── */
+    .scan-card {
+        background: rgba(255,255,255,0.03);
+        border: 1px solid rgba(255,255,255,0.10);
+        border-radius: 20px;
+        overflow: hidden;
+        box-shadow: 0 12px 40px rgba(0,0,0,0.3);
+        margin-bottom: 1.5rem;
+    }
+    .scan-card .card-header-grad {
+        background: linear-gradient(135deg,#667eea,#764ba2);
+        padding: 1.1rem 1.5rem;
+        display: flex; align-items: center; gap: .75rem;
+        font-weight: 600; font-size: 1rem; color:#fff;
+    }
+    .scan-card .card-body { padding: 1.75rem; }
+
+    /* ─── Subject grid ──────────────────────────────────────── */
+    .subject-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+        gap: .85rem;
+        margin-bottom: 1.5rem;
+    }
+    .subj-tile {
+        background: rgba(102,126,234,0.08);
+        border: 2px solid rgba(102,126,234,0.20);
+        border-radius: 14px;
+        padding: .9rem 1rem;
+        cursor: pointer;
+        transition: all .22s ease;
+        position: relative;
+        user-select: none;
+    }
+    .subj-tile:hover:not(.done) {
+        border-color: rgba(102,126,234,0.6);
+        background: rgba(102,126,234,0.16);
+        transform: translateY(-2px);
+    }
+    .subj-tile.selected {
+        border-color: #667eea;
+        background: rgba(102,126,234,0.22);
+        box-shadow: 0 0 0 3px rgba(102,126,234,0.25);
+    }
+    .subj-tile.done {
+        border-color: rgba(67,233,123,0.5);
+        background: rgba(67,233,123,0.08);
+        cursor: default;
+    }
+    .subj-tile.done .subj-name { color: #43e97b; }
+    .subj-code {
+        font-size: .72rem;
+        color: #718096;
+        text-transform: uppercase;
+        letter-spacing: .06em;
+        margin-bottom: .25rem;
+    }
+    .subj-name {
+        font-size: .92rem;
+        font-weight: 600;
+        line-height: 1.3;
+    }
+    .done-badge {
+        display: none;
+        position: absolute;
+        top: .5rem; right: .6rem;
+        background: rgba(67,233,123,0.2);
+        color: #43e97b;
+        border: 1px solid rgba(67,233,123,0.4);
+        border-radius: 20px;
+        font-size: .68rem;
+        font-weight: 700;
+        padding: .15rem .45rem;
+        text-transform: uppercase;
+        letter-spacing: .05em;
+    }
+    .subj-tile.done .done-badge { display: inline-block; }
+
+    .no-subjects-msg {
+        text-align: center;
+        color: #718096;
+        padding: 1.5rem;
+        font-size: .9rem;
+    }
+
+    /* ─── Camera ────────────────────────────────────────────── */
+    .cam-wrap {
+        position: relative;
+        width: 100%;
+        aspect-ratio: 4/3;
+        background: #0d0d1a;
+        border-radius: 14px;
+        overflow: hidden;
+        border: 2px solid rgba(102,126,234,0.35);
+        margin-bottom: 1.5rem;
+    }
+    #teacherVideo {
+        width: 100%; height: 100%;
+        object-fit: cover;
+        transform: scaleX(-1);
+    }
+    .face-ring {
+        position: absolute;
+        top: 50%; left: 50%;
+        transform: translate(-50%, -50%);
+        width: 65%; aspect-ratio: 1;
+        border: 3px solid transparent;
+        border-radius: 50%;
+        pointer-events: none;
+        animation: ringPulse 2.5s ease-in-out infinite;
+    }
+    @keyframes ringPulse {
+        0%,100% { border-color: rgba(102,126,234,.7); box-shadow: 0 0 20px rgba(102,126,234,.3); }
+        50%      { border-color: rgba(240,147,251,.9); box-shadow: 0 0 40px rgba(240,147,251,.4); }
+    }
+    #cdOverlay {
+        position: absolute; top:50%; left:50%;
+        transform: translate(-50%,-50%);
+        font-size: 5.5rem; font-weight: 900; color:#fff;
+        text-shadow: 0 0 40px rgba(102,126,234,.9);
+        display: none; z-index: 10;
+    }
+    #camPlaceholder {
+        position: absolute; inset: 0;
+        display: flex; flex-direction: column;
+        align-items: center; justify-content: center;
+        color: #4a5568; gap: .5rem;
+    }
+    .scan-line {
+        position: absolute; left: 0; right: 0; height: 2px;
+        background: linear-gradient(90deg, transparent, #667eea, #f093fb, transparent);
+        animation: scanAnim 2s linear infinite;
+        display: none;
+    }
+    @keyframes scanAnim {
+        0%   { top: 10%; opacity: 1; }
+        90%  { top: 90%; opacity: 1; }
+        100% { top: 90%; opacity: 0; }
+    }
+
+    /* ─── Scan button ───────────────────────────────────────── */
+    .btn-scan {
+        width: 100%; padding: .9rem;
+        font-size: 1.05rem; font-weight: 600;
+        border-radius: 12px; border: none; color: #fff; cursor: pointer;
+        background: linear-gradient(135deg,#667eea,#764ba2);
+        box-shadow: 0 6px 20px rgba(102,126,234,.4);
+        transition: all .3s;
+    }
+    .btn-scan:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 10px 28px rgba(102,126,234,.55); }
+    .btn-scan:disabled { opacity: .6; cursor: not-allowed; transform: none; }
+    .btn-scan.success-mode { background: linear-gradient(135deg,#43e97b,#38f9d7); box-shadow: 0 6px 20px rgba(67,233,123,.4); }
+
+    /* ─── Subject selector hint ─────────────────────────────── */
+    .select-hint {
+        background: rgba(255,193,7,0.08);
+        border: 1px solid rgba(255,193,7,0.3);
+        border-radius: 10px;
+        padding: .7rem 1rem;
+        font-size: .88rem;
+        color: #ffc107;
+        margin-bottom: 1.2rem;
+        display: flex; align-items: center; gap: .6rem;
+    }
+
+    /* ─── Info pills ────────────────────────────────────────── */
+    .info-row { display: flex; gap: 1rem; margin-bottom: 1.25rem; flex-wrap: wrap; }
+    .info-pill {
+        display: flex; align-items: center; gap: .5rem;
+        background: rgba(102,126,234,.12); border: 1px solid rgba(102,126,234,.25);
+        border-radius: 30px; padding: .35rem 1rem; font-size: .88rem; color: #a0aec0;
+    }
+    .info-pill span { font-weight: 500; }
+    .info-pill.selected-pill {
+        background: rgba(102,126,234,.25);
+        border-color: rgba(102,126,234,.5);
+    
+    }
+
+    /* ─── Status bar ────────────────────────────────────────── */
+    #alertArea { margin-bottom: 1rem; }
+    .status-bar {
+        background: rgba(0,0,0,.2); border-radius: 10px;
+        padding: .75rem 1rem; display: none;
+        align-items: center; gap: .75rem; margin-bottom: 1rem;
+    }
+    .status-bar.show { display: flex; }
+
+    /* ─── Recent table ──────────────────────────────────────── */
+    .stat-mini {
+        background: rgba(255,255,255,.03);
+        border: 1px solid rgba(255,255,255,.09);
+        border-radius: 14px; padding: 1.1rem 1.25rem;
+        text-align: center; margin-bottom: 1rem;
+    }
+    .stat-mini .val { font-size: 1.8rem; font-weight: 700; }
+    .stat-mini .lbl { font-size: .78rem; color: #718096; text-transform: uppercase; letter-spacing: .05em; }
+    .stat-mini.present .val { color: #43e97b; }
+    .stat-mini.total   .val { color: #667eea; }
+
+    /* ─── Stat chips (top of subject panel) ─────────────────── */
+    .stat-chip {
+        display: flex; align-items: center; gap: .5rem;
+        padding: .45rem 1rem;
+        border-radius: 30px;
+        font-size: .82rem;
+        border: 1px solid;
+    }
+    .stat-chip.total   { background: rgba(102,126,234,.12); border-color: rgba(102,126,234,.3); }
+    .stat-chip.done    { background: rgba(67,233,123,.10);  border-color: rgba(67,233,123,.3);  }
+    .stat-chip.pending { background: rgba(255,193,7,.10);   border-color: rgba(255,193,7,.3);   }
+    .chip-val  { font-size: 1.1rem; font-weight: 700; }
+    .chip-lbl  { font-size: .75rem; color: #718096; text-transform: uppercase; letter-spacing: .05em; }
+    .stat-chip.total   .chip-val { color: #667eea; }
+    .stat-chip.done    .chip-val { color: #43e97b; }
+    .stat-chip.pending .chip-val { color: #ffc107; }
+
+    /* ─── Department block ───────────────────────────────────── */
+    .dept-block {
+        margin-bottom: 1.5rem;
+        border: 1px solid rgba(102,126,234,.2);
+        border-radius: 16px;
+        overflow: hidden;
+    }
+    .dept-header {
+        background: linear-gradient(135deg, rgba(102,126,234,.25), rgba(118,75,162,.25));
+        border-bottom: 1px solid rgba(102,126,234,.2);
+        padding: .7rem 1.1rem;
+        font-weight: 700;
+        font-size: .95rem;
+        display: flex;
+        align-items: center;
+    }
+
+    /* ─── Section block ──────────────────────────────────────── */
+    .section-block {
+        padding: 1rem 1.1rem;
+        border-bottom: 1px solid rgba(255,255,255,.06);
+    }
+    .section-block:last-child { border-bottom: none; }
+    .section-header {
+        display: flex;
+        align-items: center;
+        gap: .5rem;
+        font-size: .82rem;
+        font-weight: 600;
+        color: #a0aec0;
+        text-transform: uppercase;
+        letter-spacing: .06em;
+        margin-bottom: .75rem;
+    }
+    .sec-count {
+        margin-left: auto;
+        background: rgba(255,255,255,.07);
+        border-radius: 20px;
+        padding: .15rem .6rem;
+        font-size: .72rem;
+        font-weight: 500;
+        color: #718096;
+        text-transform: none;
+        letter-spacing: 0;
+    }
+
+    /* ─── Subject tile meta line ─────────────────────────────── */
+    .subj-meta {
+        font-size: .68rem;
+        color: #556080;
+        margin-top: .3rem;
+        display: flex;
+        align-items: center;
+        gap: .3rem;
+    }
+
+    /* ═══ Dark Lightning Hover Effects ══════════════════════════ */
+
+    /* Main scan-cards */
+    .scan-card {
+        transition: box-shadow .35s ease, border-color .35s ease, transform .35s ease;
+    }
+    .scan-card:hover {
+        border-color: rgba(102,126,234,.5) !important;
+        box-shadow:
+            0 0 0 1.5px rgba(102,126,234,.3),
+            0 12px 56px rgba(102,126,234,.28),
+            0 4px 20px rgba(118,75,162,.22) !important;
+        transform: translateY(-3px);
+    }
+
+    /* Department blocks */
+    .dept-block {
+        transition: border-color .3s ease, box-shadow .3s ease, background .3s ease;
+    }
+    .dept-block:hover {
+        border-color: rgba(102,126,234,.45) !important;
+        box-shadow: 0 4px 24px rgba(102,126,234,.2);
+    }
+    .dept-block:hover .dept-header {
+        background: linear-gradient(135deg, rgba(102,126,234,.38), rgba(118,75,162,.38)) !important;
+    }
+
+    /* Subject tiles — dark lightning on hover */
+    .subj-tile {
+        position: relative;
+        overflow: hidden;
+    }
+    .subj-tile::before {
+        content: '';
+        position: absolute; inset: 0;
+        background: linear-gradient(135deg, rgba(102,126,234,0) 0%, rgba(118,75,162,0) 100%);
+        border-radius: inherit;
+        transition: background .25s ease;
+        pointer-events: none;
+        z-index: 0;
+    }
+    .subj-tile > *:not(.done-badge) { position: relative; z-index: 1; }
+    .done-badge { position: absolute; z-index: 2; top: .5rem; right: .6rem; }
+
+    .subj-tile:hover:not(.done) {
+        background: #1a1d2e !important;
+        border-color: #667eea !important;
+        transform: translateY(-3px) scale(1.015);
+        box-shadow:
+            0 0 0 2px rgba(102,126,234,.35),
+            0 8px 32px rgba(102,126,234,.38),
+            0 2px 10px rgba(118,75,162,.3),
+            inset 0 1px 0 rgba(255,255,255,.07) !important;
+    }
+    .subj-tile:hover:not(.done)::before {
+        background: linear-gradient(135deg, rgba(102,126,234,.2) 0%, rgba(118,75,162,.14) 100%);
+    }
+    .subj-tile:hover:not(.done) .subj-name { color: #e2e8f0 !important; }
+    .subj-tile:hover:not(.done) .subj-code { color: #a5b4fc !important; }
+    .subj-tile:hover:not(.done) .subj-meta { color: #7c8db5 !important; }
+
+    /* Selected tile: vivid indigo lightning */
+    .subj-tile.selected {
+        border-color: #667eea !important;
+        background: rgba(102,126,234,.22) !important;
+        box-shadow:
+            0 0 0 3px rgba(102,126,234,.3),
+            0 6px 24px rgba(102,126,234,.3) !important;
+    }
+
+    /* Stat chips hover */
+    .stat-chip {
+        transition: transform .22s ease, box-shadow .22s ease;
+    }
+    .stat-chip:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 16px rgba(102,126,234,.2);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-2">
+
+    <!-- Hero -->
+    <div class="attend-hero">
+        <div class="hero-icon"><i class="fas fa-face-smile"></i></div>
+        <div>
+            <h1>Mark My Attendance</h1>
+            <p>Select a subject, then scan your face &mdash; {{ today|date:"l, d F Y" }}</p>
+        </div>
+    </div>
+
+    <div class="row g-4">
+
+        <!-- LEFT: Subject selector + Camera -->
+        <div class="col-lg-7">
+
+            <!-- Step 1: Subject Selection -->
+            <div class="scan-card">
+                <div class="card-header-grad">
+                    <i class="fas fa-book-open"></i> Step 1 — Select Subject
+                </div>
+                <div class="card-body">
+
+                    <!-- Stats bar -->
+                    <div class="d-flex gap-3 mb-3 flex-wrap">
+                        <div class="stat-chip total">
+                            <span class="chip-val">{{ total_subjects }}</span>
+                            <span class="chip-lbl">Assigned</span>
+                        </div>
+                        <div class="stat-chip done">
+                            <span class="chip-val">{{ marked_today }}</span>
+                            <span class="chip-lbl">Marked Today</span>
+                        </div>
+                        <div class="stat-chip pending">
+                            <span class="chip-val">{{ pending_today }}</span>
+                            <span class="chip-lbl">Pending</span>
+                        </div>
+                    </div>
+
+                    {% if grouped_subjects %}
+                    <p style="font-size:.85rem;color:#718096;margin-bottom:1rem;">
+                        Subjects are organised by <strong style="color:#a0aec0;">Department → Section</strong>.
+                        Click a subject to select it. <span style="color:#43e97b;">✓ Done</span> badges mean already marked today.
+                    </p>
+
+                    {% for dept_label, sections in grouped_subjects.items %}
+                    <!-- Department block -->
+                    <div class="dept-block">
+                        <div class="dept-header">
+                            <i class="fas fa-university me-2"></i>{{ dept_label }}
+                        </div>
+
+                        {% for sec_label, subjects in sections.items %}
+                        <!-- Section block -->
+                        <div class="section-block">
+                            <div class="section-header">
+                                <i class="fas fa-users me-1"></i>{{ sec_label }}
+                                <span class="sec-count">{{ subjects|length }} subject{{ subjects|length|pluralize }}</span>
+                            </div>
+                            <div class="subject-grid">
+                                {% for subj in subjects %}
+                                <div class="subj-tile {% if subj.id in marked_subject_ids %}done{% endif %}"
+                                     id="tile-{{ subj.id }}"
+                                     data-id="{{ subj.id }}"
+                                     data-name="{{ subj.name }}"
+                                     onclick="selectSubject(+this.dataset.id, this.dataset.name, this)">
+                                    <div class="done-badge">✓ Done</div>
+                                    <div class="subj-code">{{ subj.code }}</div>
+                                    <div class="subj-name">{{ subj.name }}</div>
+                                    {% if subj.department %}
+                                    <div class="subj-meta">
+                                        <i class="fas fa-tag"></i> {{ subj.department.code }}{% if subj.section %} · {{ subj.section.name }}{% endif %}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endfor %}
+
+                    {% else %}
+                    <div class="no-subjects-msg">
+                        <i class="fas fa-book fa-2x mb-2" style="color:#4a5568;"></i><br>
+                        No subjects are assigned to you yet.<br>
+                        <small>Contact an admin to assign subjects to your account.</small>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Step 2: Face Scanner -->
+            <div class="scan-card">
+                <div class="card-header-grad">
+                    <i class="fas fa-camera-retro"></i> Step 2 — Face Scan
+                </div>
+                <div class="card-body">
+
+                    <!-- Info pills -->
+                    <div class="info-row">
+                        <div class="info-pill">
+                            <i class="fas fa-user-circle"></i>
+                            <span>{{ user.get_full_name|default:user.username }}</span>
+                        </div>
+                        <div class="info-pill" id="datepill">
+                            <i class="fas fa-calendar-day"></i>
+                            <span>{{ today|date:"d M Y" }}</span>
+                        </div>
+                        <div class="info-pill selected-pill" id="subjectPill" style="display:none;">
+                            <i class="fas fa-book"></i>
+                            <span id="subjectPillText"></span>
+                        </div>
+                    </div>
+
+                    <!-- Hint shown when no subject selected -->
+                    <div class="select-hint" id="selectHint">
+                        <i class="fas fa-arrow-up"></i>
+                        Select a subject above before scanning your face.
+                    </div>
+
+                    <!-- Alert area -->
+                    <div id="alertArea"></div>
+
+                    <!-- Status bar -->
+                    <div class="status-bar" id="statusBar">
+                        <div class="spinner-border spinner-border-sm text-primary" id="statusSpinner"></div>
+                        <span id="statusText" class="text-muted">Processing…</span>
+                    </div>
+
+                    <!-- Camera -->
+                    <div class="cam-wrap" id="camWrap">
+                        <div id="camPlaceholder">
+                            <i class="fas fa-camera fa-3x mb-2"></i>
+                            <small>Camera preview will appear here</small>
+                        </div>
+                        <video id="teacherVideo" autoplay playsinline style="display:none;"></video>
+                        <canvas id="teacherCanvas" style="display:none;"></canvas>
+                        <div class="face-ring" id="faceRing" style="display:none;"></div>
+                        <div id="cdOverlay"></div>
+                        <div class="scan-line" id="scanLine"></div>
+                    </div>
+
+                    <!-- Action button -->
+                    <button class="btn-scan" id="scanBtn" onclick="startScan()" disabled>
+                        <i class="fas fa-lock me-2"></i>Select a Subject First
+                    </button>
+
+                    <a href="{% url 'dashboard' %}" class="d-block text-center mt-3 text-muted" style="font-size:.9rem; text-decoration:none;">
+                        <i class="fas fa-arrow-left me-1"></i>Back to Dashboard
+                    </a>
+                </div>
+            </div>
+
+        </div><!-- /col-lg-7 -->
+
+        <!-- RIGHT: Recent Attendance -->
+        <div class="col-lg-5">
+            <div class="scan-card">
+                <div class="card-header-grad">
+                    <i class="fas fa-history"></i> My Recent Attendance
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-dark table-hover mb-0" style="font-size:.86rem;">
+                            <thead>
+                                <tr>
+                                    <th class="ps-3">Date</th>
+                                    <th>Subject</th>
+                                    <th>Status</th>
+                                    <th>Time</th>
+                                    <th class="pe-3">Method</th>
+                                </tr>
+                            </thead>
+                            <tbody id="recentBody">
+                                {% for rec in recent_attendance %}
+                                <tr>
+                                    <td class="ps-3">{{ rec.date|date:"d M" }}</td>
+                                    <td>
+                                        {% if rec.subject %}
+                                            <span style="font-weight:600;color:#c3cfff;">{{ rec.subject.code }}</span>
+                                            <small class="d-block text-muted" style="font-size:.75rem;">{{ rec.subject.name|truncatechars:20 }}</small>
+                                        {% else %}
+                                            <span class="text-muted">—</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if rec.status == 'present' %}
+                                            <span class="badge" style="background:rgba(67,233,123,.2);color:#43e97b;border:1px solid rgba(67,233,123,.3);">Present</span>
+                                        {% elif rec.status == 'absent' %}
+                                            <span class="badge" style="background:rgba(252,92,101,.2);color:#fc5c65;border:1px solid rgba(252,92,101,.3);">Absent</span>
+                                        {% else %}
+                                            <span class="badge" style="background:rgba(255,193,7,.2);color:#ffc107;border:1px solid rgba(255,193,7,.3);">Late</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ rec.time|time:"g:i A" }}</td>
+                                    <td class="pe-3">
+                                        {% if rec.recognition_type == 'face' %}
+                                            <i class="fas fa-face-smile text-primary me-1"></i>Face
+                                        {% else %}
+                                            <i class="fas fa-pencil text-muted me-1"></i>Manual
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr><td colspan="5" class="text-center text-muted py-3">No attendance records yet.</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div><!-- /col-lg-5 -->
+
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+
+{# Data island: already-marked subject IDs passed to JS without triggering the linter #}
+<script type="application/json" id="mtaf-marked-ids">[{% for sid in marked_subject_ids %}{{ sid }}{% if not forloop.last %},{% endif %}{% endfor %}]</script>
+
+<script>
+    let cameraRunning = false;
+    let selectedSubjectId   = null;
+    let selectedSubjectName = null;
+
+    const markedSubjectIds = new Set(JSON.parse(document.getElementById('mtaf-marked-ids').textContent));
+
+    /* ── Subject selection ────────────────────────────────── */
+    function selectSubject(id, name, tile) {
+        if (markedSubjectIds.has(id)) return; // already done — ignore click
+
+        // Deselect any previously selected tile
+        document.querySelectorAll('.subj-tile.selected').forEach(t => t.classList.remove('selected'));
+
+        tile.classList.add('selected');
+        selectedSubjectId   = id;
+        selectedSubjectName = name;
+
+        // Update pill
+        document.getElementById('subjectPill').style.display = '';
+        document.getElementById('subjectPillText').textContent = name;
+
+        // Hide hint, enable button
+        document.getElementById('selectHint').style.display = 'none';
+        const btn = document.getElementById('scanBtn');
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-face-smile me-2"></i>Start Face Scan for "' + name + '"';
+    }
+
+    /* ── UI helpers ───────────────────────────────────────── */
+    function setStatus(msg, spin = true) {
+        const bar = document.getElementById('statusBar');
+        bar.classList.add('show');
+        document.getElementById('statusText').textContent = msg;
+        document.getElementById('statusSpinner').style.display = spin ? '' : 'none';
+    }
+    function hideStatus() { document.getElementById('statusBar').classList.remove('show'); }
+
+    function showAlert(type, msg) {
+        const icons = { success:'check-circle', danger:'exclamation-circle', warning:'exclamation-triangle', info:'info-circle' };
+        document.getElementById('alertArea').innerHTML = `
+            <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+                <i class="fas fa-${icons[type]||'info-circle'} me-2"></i>${msg}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>`;
+    }
+
+    function countdown(secs) {
+        return new Promise(resolve => {
+            const el = document.getElementById('cdOverlay');
+            el.style.display = 'block';
+            let r = secs;
+            el.textContent = r;
+            const t = setInterval(() => {
+                r--;
+                if (r <= 0) { clearInterval(t); el.style.display = 'none'; resolve(); }
+                else el.textContent = r;
+            }, 1000);
+        });
+    }
+
+    /* ── Main scan flow ───────────────────────────────────── */
+    async function startScan() {
+        if (!selectedSubjectId) {
+            showAlert('warning', 'Please select a subject first.');
+            return;
+        }
+
+        const btn = document.getElementById('scanBtn');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Starting camera…';
+
+        const ok = await startCamera('teacherVideo', 'teacherCanvas');
+        if (!ok) {
+            showAlert('danger', 'Could not access camera. Please allow camera permissions and try again.');
+            resetUI();
+            return;
+        }
+
+        cameraRunning = true;
+        document.getElementById('teacherVideo').style.display = 'block';
+        document.getElementById('camPlaceholder').style.display = 'none';
+        document.getElementById('faceRing').style.display = 'block';
+        document.getElementById('scanLine').style.display = 'block';
+
+        // Camera warm-up stabilisation
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Camera warming up…';
+        setStatus('Camera starting — please wait…');
+        await new Promise(r => setTimeout(r, 600));
+
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Position your face…';
+        setStatus('Position your face inside the ring…');
+
+        await countdown(3);
+
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Scanning…';
+        setStatus('Scanning your face…');
+        document.getElementById('scanLine').style.animation = 'scanAnim 1s linear infinite';
+
+        // Retry capture up to 3 times (guards against blank frames)
+        let imageData = null;
+        for (let attempt = 0; attempt < 3; attempt++) {
+            if (attempt > 0) await new Promise(r => setTimeout(r, 300));
+            imageData = captureImage();
+            if (imageData) break;
+        }
+
+        if (!imageData) {
+            showAlert('danger', 'Failed to capture image. Please try again.');
+            resetUI();
+            return;
+        }
+
+        try {
+            const resp = await fetch('/api/teacher-face-attendance/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken'),
+                },
+                body: JSON.stringify({
+                    image: imageData,
+                    subject_id: selectedSubjectId,
+                }),
+            });
+
+            const data = await resp.json();
+
+            stopCamera();
+            cameraRunning = false;
+            document.getElementById('teacherVideo').style.display = 'none';
+            document.getElementById('faceRing').style.display = 'none';
+            document.getElementById('scanLine').style.display = 'none';
+            document.getElementById('camPlaceholder').style.display = 'flex';
+            hideStatus();
+
+            if (data.success) {
+                const conf = data.confidence ? ` (${(data.confidence * 100).toFixed(0)}% match)` : '';
+                if (data.already_marked) {
+                    showAlert('info', `<strong>Already Recorded!</strong> ${data.message}`);
+                } else {
+                    showAlert('success', `<strong>✓ Attendance Marked!</strong> ${data.message}${conf}`);
+                    // Mark the tile green immediately (no page reload needed for other tiles)
+                    markTileDone(data.subject_id);
+                    setTimeout(() => location.reload(), 2500);
+                }
+                btn.classList.add('success-mode');
+                btn.innerHTML = '<i class="fas fa-check me-2"></i>Done!';
+            } else {
+                showAlert('warning', `<strong>Verification Failed.</strong> ${data.message}`);
+                resetUI();
+            }
+        } catch (err) {
+            hideStatus();
+            showAlert('danger', 'Network error. Please try again.');
+            resetUI();
+        }
+    }
+
+    function markTileDone(subjectId) {
+        const tile = document.getElementById('tile-' + subjectId);
+        if (tile) {
+            tile.classList.remove('selected');
+            tile.classList.add('done');
+            markedSubjectIds.add(subjectId);
+        }
+    }
+
+    function resetUI() {
+        stopCamera();
+        cameraRunning = false;
+        const btn = document.getElementById('scanBtn');
+        if (selectedSubjectId) {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-redo me-2"></i>Try Again — "' + selectedSubjectName + '"';
+        } else {
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-lock me-2"></i>Select a Subject First';
+        }
+        document.getElementById('teacherVideo').style.display = 'none';
+        document.getElementById('faceRing').style.display = 'none';
+        document.getElementById('scanLine').style.display = 'none';
+        document.getElementById('camPlaceholder').style.display = 'flex';
+    }
+
+    window.addEventListener('beforeunload', () => { if (cameraRunning) stopCamera(); });
+</script>
+{% endblock %}

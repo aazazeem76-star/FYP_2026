@@ -1,0 +1,9 @@
+Django>=4.2.0
+Pillow>=10.0.0
+opencv-python>=4.8.0
+numpy>=1.24.0
+pandas>=2.0.0
+scikit-learn>=1.3.0
+Django-crispy-forms>=2.0
+crispy-bootstrap5>=0.7
+tensorflow>=2.13.0

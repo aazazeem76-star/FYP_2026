@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agile Development - AI Face Recognition Attendance</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body { 
+            font-family: 'Outfit', sans-serif; 
+            background-color: #f0fdfa; /* Light teal background */
+            background-image: radial-gradient(#e2e8f0 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+        .card { transition: all 0.3s ease; }
+        .card:hover { 
+            transform: translateY(-5px) scale(1.02); 
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04); 
+            z-index: 20;
+        }
+        
+        /* Custom connection lines for desktop grid */
+        .connector-right {
+            position: absolute;
+            top: 50%;
+            right: -2rem;
+            width: 2rem;
+            height: 4px;
+            background-color: #cbd5e1;
+            z-index: 0;
+        }
+        .connector-right::after {
+            content: '';
+            position: absolute;
+            right: -5px;
+            top: -4px;
+            border-top: 6px solid transparent;
+            border-bottom: 6px solid transparent;
+            border-left: 10px solid #cbd5e1;
+        }
+
+        .connector-left {
+            position: absolute;
+            top: 50%;
+            left: -2rem;
+            width: 2rem;
+            height: 4px;
+            background-color: #cbd5e1;
+            z-index: 0;
+        }
+        .connector-left::after {
+            content: '';
+            position: absolute;
+            left: -5px;
+            top: -4px;
+            border-top: 6px solid transparent;
+            border-bottom: 6px solid transparent;
+            border-right: 10px solid #cbd5e1;
+        }
+
+        .connector-down {
+            position: absolute;
+            bottom: -2rem;
+            left: 50%;
+            width: 4px;
+            height: 2rem;
+            background-color: #cbd5e1;
+            z-index: 0;
+        }
+        .connector-down::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: -4px;
+            border-left: 6px solid transparent;
+            border-right: 6px solid transparent;
+            border-top: 10px solid #cbd5e1;
+        }
+
+        .connector-up {
+            position: absolute;
+            top: -2rem;
+            left: 50%;
+            width: 4px;
+            height: 2rem;
+            background-color: #cbd5e1;
+            z-index: 0;
+        }
+        .connector-up::after {
+            content: '';
+            position: absolute;
+            top: -5px;
+            left: -4px;
+            border-left: 6px solid transparent;
+            border-right: 6px solid transparent;
+            border-bottom: 10px solid #cbd5e1;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+    
+    <div class="max-w-6xl w-full relative">
+        
+        <!-- Main Title Header -->
+        <div class="text-center mb-16 relative z-10">
+            <div class="inline-block bg-white px-10 py-8 rounded-3xl shadow-xl border border-gray-100 transform transition hover:scale-105 duration-300">
+                <div class="flex justify-center mb-4">
+                    <div class="bg-indigo-50 p-4 rounded-full">
+                        <i class="fa-solid fa-face-viewfinder text-5xl text-indigo-600"></i>
+                    </div>
+                </div>
+                <h1 class="text-4xl font-extrabold text-gray-900 tracking-tight">Agile Development</h1>
+                <p class="text-xl text-gray-600 mt-2 font-medium">for AI-Based Face Recognition Attendance System</p>
+                <div class="mt-4 flex justify-center space-x-2">
+                    <span class="h-1 w-10 bg-blue-500 rounded-full"></span>
+                    <span class="h-1 w-10 bg-teal-500 rounded-full"></span>
+                    <span class="h-1 w-10 bg-green-500 rounded-full"></span>
+                    <span class="h-1 w-10 bg-yellow-500 rounded-full"></span>
+                    <span class="h-1 w-10 bg-orange-500 rounded-full"></span>
+                    <span class="h-1 w-10 bg-purple-500 rounded-full"></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Flowchart Grid Layout -->
+        <!-- Mobile: single column, Desktop: 3x2 Grid forming a cycle -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-y-16 relative z-10">
+            
+            <!-- Phase 1 -->
+            <div class="card relative bg-white rounded-2xl shadow-lg border-t-8 border-blue-600 h-full flex flex-col">
+                <div class="p-6 flex-grow">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center space-x-3">
+                            <span class="bg-blue-600 text-white text-xl font-bold w-12 h-12 rounded-full flex items-center justify-center shadow-md shadow-blue-200">1</span>
+                            <h2 class="text-xl font-bold text-gray-800 leading-tight">Requirements<br>Analysis</h2>
+                        </div>
+                        <i class="fa-solid fa-clipboard-list text-3xl text-blue-200"></i>
+                    </div>
+                    <ul class="space-y-3 text-gray-600 mt-6">
+                        <li class="flex items-start"><i class="fa-solid fa-circle-check text-blue-500 mt-1 mr-3 text-sm"></i> <span>Identify problems</span></li>
+                        <li class="flex items-start"><i class="fa-solid fa-circle-check text-blue-500 mt-1 mr-3 text-sm"></i> <span>Collect requirements</span></li>
+                        <li class="flex items-start"><i class="fa-solid fa-circle-check text-blue-500 mt-1 mr-3 text-sm"></i> <span>Define objectives</span></li>
+                        <li class="flex items-start"><i class="fa-solid fa-circle-check text-blue-500 mt-1 mr-3 text-sm"></i> <span>Feasibility study</span></li>
+                    </ul>
+                </div>
+                <div class="hidden md:block connector-right"></div>
+                <div class="md:hidden flex justify-center py-2 text-blue-300"><i class="fa-solid fa-arrow-down text-2xl"></i></div>
+            </div>
+
+            <!-- Phase 2 -->
+            <div class="card relative bg-white rounded-2xl shadow-lg border-t-8 border-teal-500 h-full flex flex-col">
+                <div class="p-6 flex-grow">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center space-x-3">
+                            <span class="bg-teal-500 text-white text-xl font-bold w-12 h-12 rounded-full flex items-center justify-center shadow-md shadow-teal-200">2</span>
+                            <h2 class="text-xl font-bold text-gray-800 leading-tight">Planning<br>& Design</h2>
+                        </div>
+                        <i class="fa-solid fa-pen-ruler text-3xl text-teal-200"></i>
+                    </div>
+                    <ul class="space-y-3 text-gray-600 mt-6">
+                        <li class="flex items-start"><i class="fa-solid fa-circle-check text-teal-500 mt-1 mr-3 text-sm"></i> <span>Use Case Design</span></li>
+                        <li class="flex items-start"><i class="fa-solid fa-circle-check text-teal-500 mt-1 mr-3 text-sm"></i> <span>System Architecture</span></li>
+                        <li class="flex items-start"><i class="fa-solid fa-circle-check text-teal-500 mt-1 mr-3 text-sm"></i> <span>Database Design</span></li>
+                        <li class="flex items-start"><i class="fa-solid fa-circle-check text-teal-500 mt-1 mr-3 text-sm"></i> <span>UI/UX Planning</span></li>
+                    </ul>
+                </div>
+                <div class="hidden md:block connector-right"></div>
+                <div class="md:hidden flex justify-center py-2 text-teal-300"><i class="fa-solid fa-arrow-down text-2xl"></i></div>
+            </div>
+
+            <!-- Phase 3 -->
+            <div class="card relative bg-white rounded-2xl shadow-lg border-t-8 border-green-500 h-full flex flex-col">
+                <div class="p-6 flex-grow">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center space-x-3">
+                            <span class="bg-green-500 text-white text-xl font-bold w-12 h-12 rounded-full flex items-center justify-center shadow-md shadow-green-200">3</span>
+                            <h2 class="text-xl font-bold text-gray-800 leading-tight">Development<br>(Implementation)</h2>
+                        </div>
+                        <i class="fa-solid fa-code text-3xl text-green-200"></i>
+                    </div>
+                    <ul class="space-y-3 text-gray-600 mt-6">
+                        <li class="flex items-start"><i class="fa-solid fa-circle-check text-green-500 mt-1 mr-3 text-sm"></i> <span>User Authentication</span></li>
+                        <li class="flex items-start"><i class="fa-solid fa-circle-check text-green-500 mt-1 mr-3 text-sm"></i> <span>Role Management</span></li>
+                        <li class="flex items-start"><i class="fa-solid fa-circle-check text-green-500 mt-1 mr-3 text-sm"></i> <span>Face Recognition Module</span></li>
+                        <li class="flex items-start"><i class="fa-solid fa-circle-check text-green-500 mt-1 mr-3 text-sm"></i> <span>Attendance Management</span></li>
+                        <li class="flex items-start"><i class="fa-solid fa-circle-check text-green-500 mt-1 mr-3 text-sm"></i> <span>Reports & Audit Logs</span></li>
+                    </ul>
+                </div>
+                <div class="hidden md:block connector-down"></div>
+                <div class="md:hidden flex justify-center py-2 text-green-300"><i class="fa-solid fa-arrow-down text-2xl"></i></div>
+            </div>
+
+            <!-- Phase 6 (Bottom Left) -->
+            <div class="card relative bg-white rounded-2xl shadow-lg border-t-8 border-purple-600 h-full flex flex-col md:col-start-1 md:row-start-2">
+                <div class="p-6 flex-grow">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center space-x-3">
+                            <span class="bg-purple-600 text-white text-xl font-bold w-12 h-12 rounded-full flex items-center justify-center shadow-md shadow-purple-200">6</span>
+                            <h2 class="text-xl font-bold text-gray-800 leading-tight">Review & <br>Improvement</h2>
+                        </div>
+                        <i class="fa-solid fa-magnifying-glass-chart text-3xl text-purple-200"></i>
+                    </div>
+                    <ul class="space-y-3 text-gray-600 mt-6">
+                        <li class="flex items-start"><i class="fa-solid fa-circle-check text-purple-500 mt-1 mr-3 text-sm"></i> <span>Monitor System</span></li>
+                        <li class="flex items-start"><i class="fa-solid fa-circle-check text-purple-500 mt-1 mr-3 text-sm"></i> <span>Collect Feedback</span></li>
+                        <li class="flex items-start"><i class="fa-solid fa-circle-check text-purple-500 mt-1 mr-3 text-sm"></i> <span>Fix Issues</span></li>
+                        <li class="flex items-start"><i class="fa-solid fa-circle-check text-purple-500 mt-1 mr-3 text-sm"></i> <span>Enhance Features</span></li>
+                    </ul>
+                </div>
+                <div class="hidden md:block connector-up"></div>
+                <!-- No arrow down on mobile for the last item -->
+            </div>
+
+            <!-- Phase 5 (Bottom Middle) -->
+            <div class="card relative bg-white rounded-2xl shadow-lg border-t-8 border-orange-500 h-full flex flex-col md:col-start-2 md:row-start-2">
+                <div class="p-6 flex-grow">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center space-x-3">
+                            <span class="bg-orange-500 text-white text-xl font-bold w-12 h-12 rounded-full flex items-center justify-center shadow-md shadow-orange-200">5</span>
+                            <h2 class="text-xl font-bold text-gray-800 leading-tight">Deployment<br>& Launch</h2>
+                        </div>
+                        <i class="fa-solid fa-cloud-arrow-up text-3xl text-orange-200"></i>
+                    </div>
+                    <ul class="space-y-3 text-gray-600 mt-6">
+                        <li class="flex items-start"><i class="fa-solid fa-circle-check text-orange-500 mt-1 mr-3 text-sm"></i> <span>Deploy System</span></li>
+                        <li class="flex items-start"><i class="fa-solid fa-circle-check text-orange-500 mt-1 mr-3 text-sm"></i> <span>Data Migration</span></li>
+                        <li class="flex items-start"><i class="fa-solid fa-circle-check text-orange-500 mt-1 mr-3 text-sm"></i> <span>User Training</span></li>
+                        <li class="flex items-start"><i class="fa-solid fa-circle-check text-orange-500 mt-1 mr-3 text-sm"></i> <span>Go-Live</span></li>
+                    </ul>
+                </div>
+                <div class="hidden md:block connector-left"></div>
+                <div class="md:hidden flex justify-center py-2 text-orange-300"><i class="fa-solid fa-arrow-down text-2xl"></i></div>
+            </div>
+
+            <!-- Phase 4 (Bottom Right) -->
+            <div class="card relative bg-white rounded-2xl shadow-lg border-t-8 border-yellow-500 h-full flex flex-col md:col-start-3 md:row-start-2">
+                <div class="p-6 flex-grow">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center space-x-3">
+                            <span class="bg-yellow-500 text-white text-xl font-bold w-12 h-12 rounded-full flex items-center justify-center shadow-md shadow-yellow-200">4</span>
+                            <h2 class="text-xl font-bold text-gray-800 leading-tight">Testing<br>& QA</h2>
+                        </div>
+                        <i class="fa-solid fa-vial-circle-check text-3xl text-yellow-200"></i>
+                    </div>
+                    <ul class="space-y-3 text-gray-600 mt-6">
+                        <li class="flex items-start"><i class="fa-solid fa-circle-check text-yellow-500 mt-1 mr-3 text-sm"></i> <span>Unit Testing</span></li>
+                        <li class="flex items-start"><i class="fa-solid fa-circle-check text-yellow-500 mt-1 mr-3 text-sm"></i> <span>Integration Testing</span></li>
+                        <li class="flex items-start"><i class="fa-solid fa-circle-check text-yellow-500 mt-1 mr-3 text-sm"></i> <span>System Testing</span></li>
+                        <li class="flex items-start"><i class="fa-solid fa-circle-check text-yellow-500 mt-1 mr-3 text-sm"></i> <span>Performance Testing</span></li>
+                        <li class="flex items-start"><i class="fa-solid fa-circle-check text-yellow-500 mt-1 mr-3 text-sm"></i> <span>User Acceptance Testing</span></li>
+                    </ul>
+                </div>
+                <div class="hidden md:block connector-left"></div>
+                <div class="md:hidden flex justify-center py-2 text-yellow-300"><i class="fa-solid fa-arrow-down text-2xl"></i></div>
+            </div>
+
+        </div>
+    </div>
+</body>
+</html>

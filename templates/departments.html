@@ -1,0 +1,285 @@
+{% extends 'base.html' %}
+{% block title %}Departments — FRA System{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4 px-4">
+
+  <!-- Page Header -->
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h2 class="fw-bold mb-1 gradient-text">
+        <i class="fas fa-university me-2" style="color:#764ba2;-webkit-text-fill-color:#764ba2;"></i>Departments
+      </h2>
+      <p class="text-muted mb-0">Manage university academic departments and programs</p>
+    </div>
+    <button class="btn btn-primary px-4 py-2 rounded-pill shadow" data-bs-toggle="modal" data-bs-target="#createDeptModal">
+      <i class="fas fa-plus me-2"></i>Add Department
+    </button>
+  </div>
+
+  <!-- Stats Row -->
+  <div class="row g-3 mb-4">
+    <div class="col-md-4">
+      <div class="card border-0 shadow-sm rounded-4 dept-stat-card" style="background:#fff;border-left:4px solid #667eea!important;">
+        <div class="card-body d-flex align-items-center gap-3 p-4">
+          <div class="rounded-3 p-3" style="background:linear-gradient(135deg,#667eea,#764ba2)">
+            <i class="fas fa-building fa-lg text-white"></i>
+          </div>
+          <div>
+            <div class="fs-2 fw-bold text-dark">{{ total_depts }}</div>
+            <div class="text-muted small">Total Departments</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card border-0 shadow-sm rounded-4 dept-stat-card" style="background:#fff;border-left:4px solid #10b981!important;">
+        <div class="card-body d-flex align-items-center gap-3 p-4">
+          <div class="rounded-3 p-3" style="background:linear-gradient(135deg,#10b981,#059669)">
+            <i class="fas fa-layer-group fa-lg text-white"></i>
+          </div>
+          <div>
+            <div class="fs-2 fw-bold text-dark">{{ dept_data|length }}</div>
+            <div class="text-muted small">Configured Departments</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card border-0 shadow-sm rounded-4 dept-stat-card" style="background:#fff;border-left:4px solid #f59e0b!important;">
+        <div class="card-body d-flex align-items-center gap-3 p-4">
+          <div class="rounded-3 p-3" style="background:linear-gradient(135deg,#f59e0b,#d97706)">
+            <i class="fas fa-users fa-lg text-white"></i>
+          </div>
+          <div>
+            <div class="fs-2 fw-bold text-dark">
+              {% for d in dept_data %}{{ d.student_count }}{% if not forloop.last %} + {% endif %}{% empty %}0{% endfor %}
+            </div>
+            <div class="text-muted small">Total Students Across Depts</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Messages -->
+  {% for message in messages %}
+  <div class="alert alert-{{ message.tags }} alert-dismissible fade show rounded-3" role="alert">
+    <i class="fas fa-{% if message.tags == 'success' %}check-circle{% elif message.tags == 'error' or message.tags == 'danger' %}exclamation-circle{% else %}info-circle{% endif %} me-2"></i>
+    {{ message }}
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+  {% endfor %}
+
+  <!-- Department Cards -->
+  {% if dept_data %}
+  <div class="row g-4">
+    {% for item in dept_data %}
+    <div class="col-md-6 col-xl-4">
+      <div class="card border-0 shadow-sm rounded-4 h-100 dept-card" style="background:#fff;transition:transform .2s,box-shadow .2s;">
+        <!-- Gradient top bar -->
+        <div style="height:4px;background:linear-gradient(90deg,#667eea,#764ba2,#f093fb);border-radius:16px 16px 0 0;"></div>
+        <div class="card-body p-4">
+          <div class="d-flex justify-content-between align-items-start mb-3">
+            <div>
+              <span class="badge rounded-pill px-3 py-2 mb-2" style="background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;font-size:.75rem;letter-spacing:.05em;">{{ item.dept.code }}</span>
+              <h5 class="fw-bold mb-0 text-dark">{{ item.dept.name }}</h5>
+              {% if item.dept.description %}<p class="text-muted small mb-0 mt-1">{{ item.dept.description|truncatechars:60 }}</p>{% endif %}
+            </div>
+            <div class="dropdown">
+              <button class="btn btn-sm btn-light rounded-circle border" data-bs-toggle="dropdown" style="width:32px;height:32px;padding:0;">
+                <i class="fas fa-ellipsis-v fa-xs text-muted"></i>
+              </button>
+              <ul class="dropdown-menu dropdown-menu-end shadow-sm border rounded-3">
+                <li><a class="dropdown-item edit-dept-btn" href="#"
+                       data-id="{{ item.dept.id }}"
+                       data-name="{{ item.dept.name|escapejs }}"
+                       data-code="{{ item.dept.code|escapejs }}"
+                       data-desc="{{ item.dept.description|escapejs }}"
+                     ><i class="fas fa-edit me-2 text-primary"></i>Edit</a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li>
+                  <form method="post" action="{% url 'delete_department' item.dept.id %}" onsubmit="return confirm('Delete department {{ item.dept.name }}? This cannot be undone.');">
+                    {% csrf_token %}
+                    <button class="dropdown-item text-danger" type="submit"><i class="fas fa-trash me-2"></i>Delete</button>
+                  </form>
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- Section badges -->
+          <div class="mb-3">
+            <small class="text-muted d-block mb-2"><i class="fas fa-layer-group me-1"></i>Sections ({{ item.sections|length }})</small>
+            <div class="d-flex flex-wrap gap-1">
+              {% for sec in item.sections %}
+              <span class="badge rounded-pill px-2 py-1" style="background:#eef2ff;color:#4f46e5;border:1px solid #c7d2fe;font-size:.7rem;">
+                {% if sec.name == 'Morning' %}🌅{% elif sec.name == 'Shifted-Morning' %}🌤{% elif sec.name == 'Evening' %}🌙{% else %}⭐{% endif %}
+                {{ sec.name }}
+              </span>
+              {% empty %}
+              <span class="text-muted small fst-italic">No sections yet</span>
+              {% endfor %}
+            </div>
+          </div>
+
+          <!-- Stats row -->
+          <div class="row g-2 mt-auto">
+            <div class="col-4 text-center">
+              <div class="rounded-3 py-2" style="background:#eff6ff;">
+                <div class="fw-bold fs-5" style="color:#2563eb;">{{ item.student_count }}</div>
+                <div class="text-muted" style="font-size:.65rem;">Students</div>
+              </div>
+            </div>
+            <div class="col-4 text-center">
+              <div class="rounded-3 py-2" style="background:#f0fdf4;">
+                <div class="fw-bold fs-5" style="color:#16a34a;">{{ item.teacher_count }}</div>
+                <div class="text-muted" style="font-size:.65rem;">Teachers</div>
+              </div>
+            </div>
+            <div class="col-4 text-center">
+              <div class="rounded-3 py-2" style="background:#fefce8;">
+                <div class="fw-bold fs-5" style="color:#ca8a04;">{{ item.subject_count }}</div>
+                <div class="text-muted" style="font-size:.65rem;">Subjects</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="text-center py-5">
+    <div class="rounded-4 mx-auto d-flex align-items-center justify-content-center mb-4" style="width:100px;height:100px;background:#eef2ff;">
+      <i class="fas fa-university fa-3x" style="color:#764ba2;opacity:.7;"></i>
+    </div>
+    <h5 class="fw-bold mb-2 text-dark">No Departments Yet</h5>
+    <p class="text-muted mb-4">Create your first department to start organizing your university structure.</p>
+    <button class="btn btn-primary px-5 py-2 rounded-pill" data-bs-toggle="modal" data-bs-target="#createDeptModal">
+      <i class="fas fa-plus me-2"></i>Create First Department
+    </button>
+  </div>
+  {% endif %}
+</div>
+
+<!-- CREATE DEPARTMENT MODAL -->
+<div class="modal fade" id="createDeptModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 rounded-4 shadow-lg">
+      <div class="modal-header border-bottom px-4 pt-4 pb-3">
+        <h5 class="modal-title fw-bold text-dark"><i class="fas fa-building me-2 text-primary"></i>Create Department</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="post" action="{% url 'create_department' %}">
+        {% csrf_token %}
+        <div class="modal-body px-4 py-3">
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Department Name <span class="text-danger">*</span></label>
+            <input type="text" name="name" class="form-control" placeholder="e.g. Computer Science" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Short Code <span class="text-danger">*</span></label>
+            <input type="text" name="code" class="form-control" placeholder="e.g. CS, BBA, EE" maxlength="20" required>
+            <small class="text-muted">Used as a prefix throughout the system.</small>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Description</label>
+            <textarea name="description" class="form-control" rows="3" placeholder="Brief description (optional)"></textarea>
+          </div>
+        </div>
+        <div class="modal-footer border-top px-4 pb-4">
+          <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary rounded-pill px-5">
+            <i class="fas fa-check me-2"></i>Create Department
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- EDIT DEPARTMENT MODAL -->
+<div class="modal fade" id="editDeptModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 rounded-4 shadow-lg">
+      <div class="modal-header border-bottom px-4 pt-4 pb-3">
+        <h5 class="modal-title fw-bold text-dark"><i class="fas fa-edit me-2 text-primary"></i>Edit Department</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="post" id="editDeptForm" action="">
+        {% csrf_token %}
+        <div class="modal-body px-4 py-3">
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Department Name <span class="text-danger">*</span></label>
+            <input type="text" name="name" id="editDeptName" class="form-control" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Short Code <span class="text-danger">*</span></label>
+            <input type="text" name="code" id="editDeptCode" class="form-control" maxlength="20" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Description</label>
+            <textarea name="description" id="editDeptDesc" class="form-control" rows="3"></textarea>
+          </div>
+        </div>
+        <div class="modal-footer border-top px-4 pb-4">
+          <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary rounded-pill px-5">
+            <i class="fas fa-save me-2"></i>Save Changes
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<style>
+.dept-stat-card {
+    transition: transform 0.28s ease, box-shadow 0.28s ease, background-color 0.28s ease;
+    cursor: default;
+}
+.dept-stat-card:hover {
+    transform: translateY(-5px);
+    background-color: #f5f7ff !important;
+    box-shadow: 0 16px 36px -8px rgba(102, 126, 234, 0.2),
+                0 6px 16px -4px rgba(0, 0, 0, 0.07) !important;
+}
+.dept-card {
+    transition: transform 0.28s ease, box-shadow 0.28s ease, background-color 0.28s ease;
+}
+.dept-card:hover {
+    transform: translateY(-6px);
+    background-color: #f5f7ff !important;
+    box-shadow: 0 20px 40px -8px rgba(102, 126, 234, 0.22),
+                0 8px 20px -4px rgba(0, 0, 0, 0.08) !important;
+}
+.dept-card:hover h5 {
+    color: #667eea;
+}
+</style>
+
+<script type="application/json" id="dept-config">{"showCreate": {% if show_create %}true{% else %}false{% endif %}}</script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Edit department — read values from data-* attributes (no inline Django vars in JS)
+  document.querySelectorAll('.edit-dept-btn').forEach(function(btn) {
+    btn.addEventListener('click', function(e) {
+      e.preventDefault();
+      var d = btn.dataset;
+      document.getElementById('editDeptName').value = d.name;
+      document.getElementById('editDeptCode').value = d.code;
+      document.getElementById('editDeptDesc').value = d.desc;
+      document.getElementById('editDeptForm').action = '/departments/' + d.id + '/edit/';
+      new bootstrap.Modal(document.getElementById('editDeptModal')).show();
+    });
+  });
+
+  // Auto-open create modal if redirected back after a validation error
+  var cfg = JSON.parse(document.getElementById('dept-config').textContent);
+  if (cfg.showCreate) {
+    new bootstrap.Modal(document.getElementById('createDeptModal')).show();
+  }
+});
+</script>
+{% endblock %}

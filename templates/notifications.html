@@ -1,0 +1,347 @@
+{% extends 'base.html' %}
+
+{% block title %}Notifications - FRA System{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2 class="gradient-text">
+                    <i class="fas fa-bell"></i> Notifications
+                </h2>
+                <div>
+                    <button class="btn btn-outline-primary btn-sm" id="markAllRead">
+                        <i class="fas fa-check-double"></i> Mark All Read
+                    </button>
+                    <button class="btn btn-outline-danger btn-sm" id="clearAll">
+                        <i class="fas fa-trash"></i> Clear All
+                    </button>
+                </div>
+            </div>
+
+            <!-- Notification Stats -->
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <div class="glass-card p-3 text-center">
+                        <i class="fas fa-envelope fa-2x mb-2 text-primary"></i>
+                        <h4>{{ total_notifications }}</h4>
+                        <small class="text-muted">Total</small>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="glass-card p-3 text-center">
+                        <i class="fas fa-envelope-open fa-2x mb-2 text-success"></i>
+                        <h4>{{ unread_count }}</h4>
+                        <small class="text-muted">Unread</small>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="glass-card p-3 text-center">
+                        <i class="fas fa-check-circle fa-2x mb-2 text-info"></i>
+                        <h4>{{ success_count }}</h4>
+                        <small class="text-muted">Success</small>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="glass-card p-3 text-center">
+                        <i class="fas fa-exclamation-triangle fa-2x mb-2 text-warning"></i>
+                        <h4>{{ alert_count }}</h4>
+                        <small class="text-muted">Alerts</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filter Tabs -->
+            <ul class="nav nav-pills mb-4" id="notificationTabs">
+                <li class="nav-item">
+                    <a class="nav-link active" data-filter="all" href="#all">All</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" data-filter="unread" href="#unread">Unread</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" data-filter="success" href="#success">Success</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" data-filter="alert" href="#alert">Alerts</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" data-filter="info" href="#info">Info</a>
+                </li>
+            </ul>
+
+            <!-- Notifications List -->
+            <div class="glass-card p-4">
+                {% if notifications %}
+                    <div id="notificationsList">
+                        {% for notification in notifications %}
+                        <div class="notification-item {% if not notification.is_read %}unread{% endif %} notification-{{ notification.notification_type }}" 
+                             data-id="{{ notification.id }}"
+                             data-type="{{ notification.notification_type }}">
+                            <div class="d-flex align-items-start">
+                                <div class="notification-icon me-3">
+                                    {% if notification.notification_type == 'success' %}
+                                        <i class="fas fa-check-circle text-success fa-2x"></i>
+                                    {% elif notification.notification_type == 'alert' %}
+                                        <i class="fas fa-exclamation-triangle text-warning fa-2x"></i>
+                                    {% elif notification.notification_type == 'error' %}
+                                        <i class="fas fa-times-circle text-danger fa-2x"></i>
+                                    {% else %}
+                                        <i class="fas fa-info-circle text-info fa-2x"></i>
+                                    {% endif %}
+                                </div>
+                                <div class="flex-grow-1">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div>
+                                            <h5 class="mb-1">{{ notification.title }}</h5>
+                                            <p class="mb-2 text-muted">{{ notification.message }}</p>
+                                            <small class="text-muted">
+                                                <i class="fas fa-clock"></i> {{ notification.created_at|timesince }} ago
+                                            </small>
+                                        </div>
+                                        <div class="notification-actions">
+                                            {% if not notification.is_read %}
+                                                <button class="btn btn-sm btn-outline-primary mark-read" data-id="{{ notification.id }}">
+                                                    <i class="fas fa-check"></i>
+                                                </button>
+                                            {% endif %}
+                                            <button class="btn btn-sm btn-outline-danger delete-notification" data-id="{{ notification.id }}">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    {% if notification.action_url %}
+                                        <a href="{{ notification.action_url }}" class="btn btn-sm btn-primary mt-2">
+                                            <i class="fas fa-external-link-alt"></i> View Details
+                                        </a>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    <!-- Pagination -->
+                    {% if is_paginated %}
+                    <nav aria-label="Notifications pagination" class="mt-4">
+                        <ul class="pagination justify-content-center">
+                            {% if page_obj.has_previous %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page=1">First</a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Previous</a>
+                                </li>
+                            {% endif %}
+
+                            <li class="page-item active">
+                                <span class="page-link">
+                                    Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+                                </span>
+                            </li>
+
+                            {% if page_obj.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.next_page_number }}">Next</a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">Last</a>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                    {% endif %}
+                {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-bell-slash fa-4x text-muted mb-3"></i>
+                        <h4>No Notifications</h4>
+                        <p class="text-muted">You're all caught up! No new notifications.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.notification-item {
+    padding: 1.5rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    transition: all 0.3s ease;
+}
+
+.notification-item:last-child {
+    border-bottom: none;
+}
+
+.notification-item:hover {
+    background: rgba(255, 255, 255, 0.05);
+    transform: translateX(5px);
+}
+
+.notification-item.unread {
+    background: rgba(99, 102, 241, 0.1);
+    border-left: 4px solid #6366f1;
+}
+
+.notification-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.nav-pills .nav-link {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.1);
+    margin-right: 0.5rem;
+}
+
+.nav-pills .nav-link.active {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.notification-icon {
+    min-width: 50px;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Filter notifications
+    const filterLinks = document.querySelectorAll('#notificationTabs .nav-link');
+    filterLinks.forEach(link => {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            filterLinks.forEach(l => l.classList.remove('active'));
+            this.classList.add('active');
+            
+            const filter = this.dataset.filter;
+            const notifications = document.querySelectorAll('.notification-item');
+            
+            notifications.forEach(notif => {
+                if (filter === 'all') {
+                    notif.style.display = 'block';
+                } else if (filter === 'unread') {
+                    notif.style.display = notif.classList.contains('unread') ? 'block' : 'none';
+                } else {
+                    notif.style.display = notif.dataset.type === filter ? 'block' : 'none';
+                }
+            });
+        });
+    });
+
+    // Mark as read
+    document.querySelectorAll('.mark-read').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const notifId = this.dataset.id;
+            markAsRead(notifId);
+        });
+    });
+
+    // Delete notification
+    document.querySelectorAll('.delete-notification').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const notifId = this.dataset.id;
+            deleteNotification(notifId);
+        });
+    });
+
+    // Mark all as read
+    document.getElementById('markAllRead')?.addEventListener('click', function() {
+        if (confirm('Mark all notifications as read?')) {
+            markAllAsRead();
+        }
+    });
+
+    // Clear all
+    document.getElementById('clearAll')?.addEventListener('click', function() {
+        if (confirm('Delete all notifications? This cannot be undone.')) {
+            clearAllNotifications();
+        }
+    });
+
+    function markAsRead(notifId) {
+        fetch(`/api/notifications/${notifId}/read/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const notifItem = document.querySelector(`[data-id="${notifId}"]`);
+                notifItem.classList.remove('unread');
+                notifItem.querySelector('.mark-read')?.remove();
+                location.reload();
+            }
+        });
+    }
+
+    function deleteNotification(notifId) {
+        fetch(`/api/notifications/${notifId}/delete/`, {
+            method: 'DELETE',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                document.querySelector(`[data-id="${notifId}"]`).remove();
+                location.reload();
+            }
+        });
+    }
+
+    function markAllAsRead() {
+        fetch('/api/notifications/mark-all-read/', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            }
+        });
+    }
+
+    function clearAllNotifications() {
+        fetch('/api/notifications/clear-all/', {
+            method: 'DELETE',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            }
+        });
+    }
+
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+});
+</script>
+{% endblock %}

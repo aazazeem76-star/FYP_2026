@@ -1,0 +1,259 @@
+{% extends 'base.html' %}
+
+{% block title %}Admin Panel - FRA System{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1 class="gradient-text mb-3">
+                <i class="fas fa-user-shield"></i> Admin Control Panel
+            </h1>
+            <p class="text-muted">Manage users, approvals, and system settings</p>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-md-4 mb-3">
+            <div class="stat-card">
+                <div class="stat-icon bg-primary">
+                    <i class="fas fa-users"></i>
+                </div>
+                <div class="stat-content">
+                    <h3>{{ all_users.count }}</h3>
+                    <p>Total Users</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-3">
+            <div class="stat-card">
+                <div class="stat-icon bg-warning">
+                    <i class="fas fa-clock"></i>
+                </div>
+                <div class="stat-content">
+                    <h3>{{ pending_users.count }}</h3>
+                    <p>Pending Approvals</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-3">
+            <div class="stat-card">
+                <div class="stat-icon bg-success">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <div class="stat-content">
+                    <h3>{{ all_users|length|add:pending_users.count|add:"-"|add:pending_users.count }}</h3>
+                    <p>Active Users</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pending Approvals -->
+    {% if pending_users %}
+    <div class="card glass-card mb-4">
+        <div class="card-header">
+            <h4 class="mb-0">
+                <i class="fas fa-user-clock"></i> Pending User Approvals
+                <span class="badge bg-warning">{{ pending_users.count }}</span>
+            </h4>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Username</th>
+                            <th>Email</th>
+                            <th>Full Name</th>
+                            <th>Role</th>
+                            <th>Dept / Section</th>
+                            <th>Registered</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for user in pending_users %}
+                        <tr>
+                            <td><strong>{{ user.username }}</strong></td>
+                            <td>{{ user.email }}</td>
+                            <td>{{ user.first_name }} {{ user.last_name }}</td>
+                            <td>
+                                <span class="badge bg-info">{{ user.role|upper }}</span>
+                            </td>
+                            <td>
+                                {% if user.dept %}
+                                <span class="badge rounded-pill px-2 py-1 d-block mb-1" style="background:rgba(102,126,234,.2);color:#a5b4fc;border:1px solid rgba(102,126,234,.3);font-size:.68rem;">
+                                    <i class="fas fa-university me-1"></i>{{ user.dept.code }}
+                                </span>
+                                {% endif %}
+                                {% if user.section %}
+                                <span class="badge rounded-pill px-2 py-1 d-block" style="background:rgba(17,153,142,.2);color:#38ef7d;border:1px solid rgba(17,153,142,.3);font-size:.68rem;">
+                                    <i class="fas fa-layer-group me-1"></i>{{ user.section.name }}
+                                </span>
+                                {% else %}
+                                <small class="text-muted">—</small>
+                                {% endif %}
+                            </td>
+                            <td>{{ user.date_joined|date:"M d, Y" }}</td>
+                            <td>
+                                <a href="{% url 'approve_user' user.id %}" class="btn btn-sm btn-success me-1"
+                                    onclick="return confirm('Approve user {{ user.username }}?')">
+                                    <i class="fas fa-check"></i> Approve
+                                </a>
+                                <a href="{% url 'delete_user' user.id %}" class="btn btn-sm btn-danger"
+                                    onclick="return confirm('Are you sure you want to delete user {{ user.username }}? This action cannot be undone!')">
+                                    <i class="fas fa-trash"></i> Delete
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="alert alert-info">
+        <i class="fas fa-info-circle"></i> No pending user approvals at this time.
+    </div>
+    {% endif %}
+
+    <!-- All Users -->
+    <div class="card glass-card mb-4">
+        <div class="card-header">
+            <h4 class="mb-0">
+                <i class="fas fa-users"></i> All Users
+            </h4>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Photo</th>
+                            <th>Username</th>
+                            <th>Email</th>
+                            <th>Role</th>
+                            <th>Dept / Section</th>
+                            <th>Status</th>
+                            <th>Last Login</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for user in all_users %}
+                        <tr>
+                            <td>{{ user.id }}</td>
+                            <td>
+                                {% if user.face_photo_path %}
+                                <img src="/media/{{ user.face_photo_path }}"
+                                     alt="{{ user.username }}"
+                                     style="width:38px;height:38px;border-radius:50%;object-fit:cover;border:2px solid #dee2e6;">
+                                {% else %}
+                                <span style="display:inline-flex;align-items:center;justify-content:center;width:38px;height:38px;border-radius:50%;background:#e9ecef;color:#6c757d;font-size:1.1rem;">
+                                    <i class="fas fa-user"></i>
+                                </span>
+                                {% endif %}
+                            </td>
+                            <td><strong>{{ user.username }}</strong></td>
+                            <td>{{ user.email }}</td>
+                            <td>
+                                <span
+                                    class="badge bg-{% if user.role == 'admin' %}danger{% elif user.role == 'teacher' %}primary{% else %}secondary{% endif %}">
+                                    {{ user.role|upper }}
+                                </span>
+                            </td>
+                            <td>
+                                {% if user.dept %}
+                                <span class="badge rounded-pill px-2 py-1 d-block mb-1" style="background:rgba(102,126,234,.2);color:#a5b4fc;border:1px solid rgba(102,126,234,.3);font-size:.65rem;white-space:nowrap;">
+                                    <i class="fas fa-university me-1"></i>{{ user.dept.code }}
+                                </span>
+                                {% endif %}
+                                {% if user.section %}
+                                <span class="badge rounded-pill px-2 py-1 d-block" style="background:rgba(17,153,142,.2);color:#38ef7d;border:1px solid rgba(17,153,142,.3);font-size:.65rem;white-space:nowrap;">
+                                    <i class="fas fa-layer-group me-1"></i>{{ user.section.name }}
+                                </span>
+                                {% else %}
+                                <small class="text-muted">—</small>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if user.is_approved %}
+                                <span class="badge bg-success">Approved</span>
+                                {% else %}
+                                <span class="badge bg-warning">Pending</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if user.last_login %}
+                                {{ user.last_login|date:"M d, Y H:i" }}
+                                {% else %}
+                                <span class="text-muted">Never</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if user.id != request.user.id %}
+                                <a href="{% url 'delete_user' user.id %}" class="btn btn-sm btn-danger"
+                                    onclick="return confirm('Are you sure you want to delete user {{ user.username }}? This action cannot be undone!')">
+                                    <i class="fas fa-trash"></i> Delete
+                                </a>
+                                {% else %}
+                                <span class="text-muted small">Current User</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- System Logs -->
+    <div class="card glass-card">
+        <div class="card-header">
+            <h4 class="mb-0">
+                <i class="fas fa-list-alt"></i> Recent System Logs
+            </h4>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th>Time</th>
+                            <th>User</th>
+                            <th>Action</th>
+                            <th>Description</th>
+                            <th>IP Address</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for log in system_logs %}
+                        <tr>
+                            <td>{{ log.created_at|date:"M d, H:i" }}</td>
+                            <td>{{ log.user.username }}</td>
+                            <td>
+                                <span
+                                    class="badge bg-{% if log.log_type == 'error' %}danger{% elif log.log_type == 'warning' %}warning{% else %}info{% endif %}">
+                                    {{ log.action }}
+                                </span>
+                            </td>
+                            <td>{{ log.description|truncatewords:10 }}</td>
+                            <td><small>{{ log.ip_address }}</small></td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center text-muted">No logs available</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

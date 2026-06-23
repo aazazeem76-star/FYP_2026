@@ -1,0 +1,537 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Mark Attendance - Face Recognition{% endblock %}
+
+{% block extra_css %}
+<style>
+  .face-card {
+    max-width: 680px; margin: 0 auto; border-radius: 20px; overflow: hidden;
+    box-shadow: 0 20px 60px rgba(79,70,229,.18);
+    transition: transform .3s ease, box-shadow .3s ease;
+  }
+  .face-card:hover {
+    transform: translateY(-8px) scale(1.013);
+    box-shadow:
+      0 0 0 2px rgba(139,92,246,.60),
+      0 0 30px 6px rgba(99,102,241,.40),
+      0 0 70px 18px rgba(59,130,246,.18),
+      0 32px 72px rgba(0,0,0,.45);
+  }
+  .face-card-header { background: linear-gradient(135deg,#4f46e5,#7c3aed); padding: 1.4rem 2rem; color: #fff; }
+  .camera-wrap { position: relative; background: #0d0d1a; border-radius: 0; overflow: hidden; aspect-ratio: 4/3; }
+  #cameraVideo { width: 100%; height: 100%; object-fit: cover; display: block; transform: scaleX(-1); }
+  #cameraCanvas { display: none; }
+
+  /* Face guide circle */
+  .face-guide {
+    position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+    pointer-events: none;
+  }
+  .face-guide-ring {
+    width: 370px; height: 450px; border: 4px solid rgba(99,102,241,.7);
+    border-radius: 50%; box-shadow: 0 0 0 2000px rgba(0,0,0,.35);
+    transition: border-color .3s, box-shadow .3s;
+  }
+  .face-guide-ring.detected {
+    border-color: #10b981;
+    box-shadow: 0 0 0 2000px rgba(0,0,0,.35), 0 0 30px rgba(16,185,129,.5);
+    animation: pulse-green 1.2s infinite;
+  }
+  @keyframes pulse-green { 0%,100%{box-shadow:0 0 0 2000px rgba(0,0,0,.35),0 0 20px rgba(16,185,129,.4)} 50%{box-shadow:0 0 0 2000px rgba(0,0,0,.35),0 0 40px rgba(16,185,129,.7)} }
+
+  /* Redirect countdown overlay */
+  #redirectOverlay {
+    position: absolute; inset: 0; display: none; flex-direction: column;
+    align-items: center; justify-content: center; background: rgba(15,0,30,.82);
+    z-index: 30; text-align: center;
+  }
+  #redirectIcon { font-size: 3.5rem; color: #ef4444; margin-bottom: .6rem; }
+  #redirectMsg  { color: #fff; font-size: 1.05rem; font-weight: 600; line-height: 1.4; }
+  #redirectSub  { color: rgba(255,255,255,.7); font-size: .85rem; margin-top: .4rem; }
+  #redirectCount { font-size: 2.4rem; font-weight: 900; color: #f87171;
+    margin-top: .5rem; line-height: 1; }
+
+  /* Countdown overlay */
+  #countdownOverlay {
+    position: absolute; inset: 0; display: none; flex-direction: column;
+    align-items: center; justify-content: center; background: rgba(0,0,0,.5);
+    z-index: 20;
+  }
+  #countdownNum {
+    font-size: 7rem; font-weight: 900; color: #fff; line-height: 1;
+    text-shadow: 0 4px 30px rgba(99,102,241,.8);
+    animation: pop .8s ease;
+  }
+  @keyframes pop { 0%{transform:scale(1.4);opacity:0} 100%{transform:scale(1);opacity:1} }
+  #countdownTip { color: rgba(255,255,255,.85); font-size: 1rem; margin-top: .6rem; letter-spacing:.02em; }
+
+  /* Scanning animation */
+  #scanLine {
+    position: absolute; left: 0; right: 0; height: 3px;
+    background: linear-gradient(90deg,transparent,#6366f1,#a78bfa,transparent);
+    display: none; animation: scanMove 1.6s linear infinite; z-index: 15;
+  }
+  @keyframes scanMove { 0%{top:10%} 100%{top:90%} }
+
+  /* Hint bar */
+  #hintBar {
+    position: absolute; bottom: 0; left: 0; right: 0; padding: .55rem 1rem;
+    background: rgba(0,0,0,.65); color: #fff; font-size: .82rem;
+    text-align: center; z-index: 10; display: none;
+  }
+  #hintBar i { margin-right: .35rem; color: #a78bfa; }
+
+  /* Confidence bar */
+  .conf-bar-wrap { height: 8px; background: #e5e7eb; border-radius: 99px; overflow: hidden; }
+  .conf-bar { height: 100%; width: 0; border-radius: 99px; transition: width .5s, background .5s;
+    background: linear-gradient(90deg,#ef4444,#f59e0b,#10b981); }
+
+  /* Status card */
+  #statusCard { display: none; border-radius: 16px; overflow: hidden; margin-top: 1.2rem; }
+  .status-success { background: linear-gradient(135deg,#ecfdf5,#d1fae5); border: 1.5px solid #6ee7b7; }
+  .status-fail    { background: linear-gradient(135deg,#fff1f2,#ffe4e6); border: 1.5px solid #fca5a5; }
+  .status-info    { background: linear-gradient(135deg,#eff6ff,#dbeafe); border: 1.5px solid #93c5fd; }
+
+  .btn-scan { background: linear-gradient(135deg,#4f46e5,#7c3aed); border: none; color: #fff;
+    padding: .75rem 2.2rem; border-radius: 12px; font-weight: 600; font-size: 1rem;
+    transition: transform .15s, box-shadow .15s; }
+  .btn-scan:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(79,70,229,.4); color:#fff; }
+  .btn-scan:disabled { opacity: .6; cursor: not-allowed; }
+
+  .btn-retry { background: linear-gradient(135deg,#f59e0b,#d97706); border: none; color: #fff;
+    padding: .65rem 1.8rem; border-radius: 10px; font-weight: 600; transition: transform .15s; }
+  .btn-retry:hover { transform: translateY(-2px); color:#fff; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="face-card">
+
+    <!-- Header -->
+    <div class="face-card-header d-flex align-items-center gap-3">
+      <i class="fas fa-face-smile fs-3"></i>
+      <div>
+        <h5 class="mb-0 fw-bold">Mark Attendance — Face Recognition</h5>
+        <small class="opacity-75">Your face is verified against your registered samples only</small>
+      </div>
+    </div>
+
+    <!-- Camera -->
+    <div class="camera-wrap">
+      <video id="cameraVideo" autoplay playsinline muted></video>
+      <canvas id="cameraCanvas"></canvas>
+
+      <!-- Face guide oval -->
+      <div class="face-guide">
+        <div class="face-guide-ring" id="faceRing"></div>
+      </div>
+
+      <!-- Countdown -->
+      <div id="countdownOverlay">
+        <div id="countdownNum">3</div>
+        <div id="countdownTip">Position your face inside the oval</div>
+      </div>
+
+      <!-- Scan line -->
+      <div id="scanLine"></div>
+
+      <!-- Redirect countdown overlay -->
+      <div id="redirectOverlay">
+        <div id="redirectIcon"><i class="fas fa-user-slash"></i></div>
+        <div id="redirectMsg">Face Not Recognized</div>
+        <div id="redirectSub">This face does not match your registered profile.<br>Redirecting to dashboard…</div>
+        <div id="redirectCount">3</div>
+      </div>
+
+      <!-- Hint bar -->
+      <div id="hintBar"><i class="fas fa-lightbulb"></i><span id="hintText">Good lighting improves accuracy</span></div>
+    </div>
+
+    <!-- Body -->
+    <div class="p-4">
+
+      {% if no_live_session %}
+      <!-- No live session -->
+      <div class="alert d-flex align-items-start gap-3 mb-4" style="background:linear-gradient(135deg,rgba(245,158,11,.1),rgba(217,119,6,.07));border:1.5px solid rgba(245,158,11,.35);border-radius:14px;">
+        <i class="fas fa-clock mt-1" style="color:#f59e0b;font-size:1.2rem;"></i>
+        <div>
+          <strong>No Live Session Active</strong><br>
+          <small class="text-muted">Your teacher hasn't started an attendance session yet. Please wait.</small>
+        </div>
+      </div>
+      {% else %}
+
+      <!-- Subject selector -->
+      <div class="mb-4">
+        <label class="form-label fw-semibold" for="subjectSelect">
+          <i class="fas fa-book me-1" style="color:#4f46e5;"></i>Select Subject
+          <span class="badge ms-2" style="background:linear-gradient(135deg,#10b981,#059669);color:#fff;font-size:.68rem;border-radius:20px;padding:.22rem .55rem;">
+            <i class="fas fa-circle me-1" style="font-size:.45rem;"></i>Live
+          </span>
+        </label>
+        <select id="subjectSelect" class="form-select" style="border-radius:10px;border:1.5px solid #e5e7eb;">
+          <option value="" disabled selected>— Select a Subject —</option>
+          {% for subject in subjects %}
+          <option value="{{ subject.id }}">{{ subject.name }} — {{ subject.code }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- Confidence bar (hidden until scan) -->
+      <div id="confWrap" class="mb-3" style="display:none;">
+        <div class="d-flex justify-content-between mb-1">
+          <small class="text-muted fw-semibold">Match Confidence</small>
+          <small id="confPct" class="fw-bold" style="color:#4f46e5;">0%</small>
+        </div>
+        <div class="conf-bar-wrap"><div class="conf-bar" id="confBar"></div></div>
+      </div>
+
+      <!-- Status card -->
+      <div id="statusCard">
+        <div class="p-3 d-flex align-items-start gap-3" id="statusInner">
+          <i id="statusIcon" class="fs-4 mt-1"></i>
+          <div>
+            <div id="statusTitle" class="fw-bold"></div>
+            <div id="statusMsg" class="small mt-1"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Controls -->
+      <div class="d-flex align-items-center gap-3 mt-4 flex-wrap">
+        <button id="startBtn" class="btn btn-scan" onclick="startAndRecognize()">
+          <i class="fas fa-video me-2"></i>Start Scan
+        </button>
+        <button id="retryBtn" class="btn btn-retry" onclick="retryRecognition()" style="display:none;">
+          <i class="fas fa-rotate-right me-2"></i>Try Again
+        </button>
+      </div>
+
+      {% endif %}
+
+      <div class="mt-4">
+        <a href="{% url 'dashboard' %}" class="text-muted small">
+          <i class="fas fa-arrow-left me-1"></i>Back to Dashboard
+        </a>
+      </div>
+    </div><!-- /body -->
+  </div><!-- /face-card -->
+</div>
+{% endblock %}
+
+{% block extra_js %}
+
+{# Data island: subject IDs passed to JS without triggering the linter #}
+<script type="application/json" id="maf-subject-ids">[{% for s in subjects %}{{ s.id }}{% if not forloop.last %},{% endif %}{% endfor %}]</script>
+
+<script>
+// ── State ──────────────────────────────────────────────────────────────────
+let cameraActive   = false;
+let detectionLoop  = null;
+let abortScan      = false;
+
+const CSRF = '{{ csrf_token }}';
+
+// ── Live-session polling (unchanged logic) ─────────────────────────────────
+const _initialIds = JSON.parse(document.getElementById('maf-subject-ids').textContent);
+_initialIds.sort();
+let _knownSnapshot = JSON.stringify(_initialIds);
+const _pollInterval = setInterval(async () => {
+  if (cameraActive) return;
+  try {
+    const r = await fetch('/api/live-attendance/check/', { headers: {'X-Requested-With':'XMLHttpRequest'} });
+    if (!r.ok) return;
+    const d = await r.json();
+    const ids = (d.active_subject_ids || []).slice().sort();
+    if (JSON.stringify(ids) !== _knownSnapshot) { clearInterval(_pollInterval); location.reload(); }
+  } catch(_) {}
+}, 5000);
+
+window.addEventListener('beforeunload', () => {
+  clearInterval(_pollInterval);
+  if (cameraActive) stopCam();
+});
+
+// ── Helpers ────────────────────────────────────────────────────────────────
+function el(id) { return document.getElementById(id); }
+
+function setHint(text, icon='fa-lightbulb') {
+  el('hintText').textContent = text;
+  el('hintBar').querySelector('i').className = `fas ${icon}`;
+  el('hintBar').style.display = 'block';
+}
+
+function showStatus(type, title, msg) {
+  // type: 'success' | 'fail' | 'info'
+  const card = el('statusCard');
+  card.className = `status-${type}`;
+  card.style.display = 'block';
+  const icons = { success:'fas fa-check-circle text-success', fail:'fas fa-times-circle text-danger', info:'fas fa-info-circle text-primary' };
+  el('statusIcon').className = icons[type] + ' fs-4 mt-1';
+  el('statusTitle').textContent = title;
+  el('statusMsg').textContent = msg;
+}
+
+function setConfidence(score) {
+  const pct = Math.round(score * 100);
+  el('confWrap').style.display = 'block';
+  el('confBar').style.width = pct + '%';
+  el('confPct').textContent = pct + '%';
+  const color = score >= 0.65 ? '#10b981' : score >= 0.45 ? '#f59e0b' : '#ef4444';
+  el('confPct').style.color = color;
+}
+
+// ── Camera control ─────────────────────────────────────────────────────────
+async function startCam() {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: { width:{ideal:1280}, height:{ideal:720}, facingMode:'user' }
+    });
+    el('cameraVideo').srcObject = stream;
+    window._camStream = stream;
+    cameraActive = true;
+    return true;
+  } catch(e) {
+    showStatus('fail','Camera Error','Could not access camera. Please allow camera permissions.');
+    return false;
+  }
+}
+
+function stopCam() {
+  if (window._camStream) {
+    window._camStream.getTracks().forEach(t => t.stop());
+    window._camStream = null;
+  }
+  el('cameraVideo').srcObject = null;
+  cameraActive = false;
+  if (detectionLoop) { clearInterval(detectionLoop); detectionLoop = null; }
+  el('scanLine').style.display = 'none';
+  el('hintBar').style.display = 'none';
+  el('faceRing').classList.remove('detected');
+}
+
+function captureFrame() {
+  const video  = el('cameraVideo');
+  const canvas = el('cameraCanvas');
+  canvas.width  = video.videoWidth  || 640;
+  canvas.height = video.videoHeight || 480;
+  const ctx = canvas.getContext('2d');
+
+  // ── Step 1: raw mirror-corrected draw ─────────────────────────────────────
+  ctx.save();
+  ctx.scale(-1, 1);
+  ctx.drawImage(video, -canvas.width, 0, canvas.width, canvas.height);
+  ctx.restore();
+
+  // ── Step 2: measure mean luminance (sample every 16th pixel for speed) ────
+  const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  let lum = 0, n = 0;
+  for (let i = 0; i < imgData.data.length; i += 64) {  // 64 = 16px × 4 channels
+    lum += 0.299 * imgData.data[i] + 0.587 * imgData.data[i+1] + 0.114 * imgData.data[i+2];
+    n++;
+  }
+  lum = n > 0 ? lum / n : 128;
+
+  // ── Step 3: if dim (<140/255), re-draw with adaptive brightness boost ──────
+  // Threshold raised from 100 to 140: a bright background wall pulls mean
+  // luminance well above 100 even when the face itself is under-exposed.
+  // Target mean ~150; boost = (150 / actual) capped at 3.5×.
+  if (lum < 140) {
+    const boost    = Math.min(350, Math.round((150 / Math.max(lum, 8)) * 100));
+    const contrast = Math.min(160, Math.round(100 + (140 - lum) * 0.35));
+    ctx.save();
+    ctx.filter = `brightness(${boost}%) contrast(${contrast}%)`;
+    ctx.scale(-1, 1);
+    ctx.drawImage(video, -canvas.width, 0, canvas.width, canvas.height);
+    ctx.restore();
+    ctx.filter = 'none';  // reset for future draws
+  }
+
+  return canvas.toDataURL('image/jpeg', 0.92);
+}
+
+// ── Countdown ─────────────────────────────────────────────────────────────
+function countdown(seconds, tipText) {
+  return new Promise(resolve => {
+    const overlay = el('countdownOverlay');
+    const num     = el('countdownNum');
+    const tip     = el('countdownTip');
+    overlay.style.display = 'flex';
+    tip.textContent = tipText || 'Position your face inside the oval';
+    let remaining = seconds;
+    num.textContent = remaining;
+
+    const tips = [
+      'Look directly at the camera',
+      'Keep your face inside the oval',
+      'Ensure good lighting',
+      'Remove glasses if possible',
+      'Hold still…',
+    ];
+
+    const timer = setInterval(() => {
+      remaining--;
+      // Trigger re-animation
+      num.style.animation = 'none';
+      void num.offsetWidth;
+      num.style.animation = 'pop .8s ease';
+
+      if (tips[seconds - remaining]) tip.textContent = tips[seconds - remaining];
+
+      if (remaining <= 0) {
+        clearInterval(timer);
+        overlay.style.display = 'none';
+        resolve();
+      } else {
+        num.textContent = remaining;
+      }
+    }, 1000);
+  });
+}
+
+// ── Main scan flow ─────────────────────────────────────────────────────────
+async function startAndRecognize() {
+  const subjectId = el('subjectSelect') ? el('subjectSelect').value : null;
+  if (!subjectId) {
+    showStatus('info','Select Subject','Please choose a subject before scanning.');
+    return;
+  }
+
+  abortScan = false;
+  el('startBtn').disabled = true;
+  el('startBtn').innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Starting…';
+  el('retryBtn').style.display = 'none';
+  el('statusCard').style.display = 'none';
+  el('confWrap').style.display = 'none';
+
+  // Start camera
+  const ok = await startCam();
+  if (!ok) {
+    el('startBtn').disabled = false;
+    el('startBtn').innerHTML = '<i class="fas fa-video me-2"></i>Start Scan';
+    return;
+  }
+
+  setHint('Camera ready — position your face inside the oval', 'fa-circle-info');
+
+  // Wait for video to play
+  await new Promise(r => setTimeout(r, 800));
+
+  // 3-second countdown with live hints
+  await countdown(3);
+
+  if (abortScan) { stopCam(); return; }
+
+  // Show scan animation
+  el('scanLine').style.display = 'block';
+  el('startBtn').innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Scanning…';
+  setHint('Scanning… hold still', 'fa-rotate');
+
+  // ── Multi-frame: capture 3 frames, use best result ──────────────────────
+  let bestResult = null;
+  let bestConf   = -1;
+
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    if (abortScan) break;
+
+    setHint(`Scanning frame ${attempt} of 3…`, 'fa-rotate');
+
+    const imageData = captureFrame();
+    if (!imageData) { await sleep(800); continue; }
+
+    try {
+      const resp = await fetch('/api/recognize-face/', {
+        method: 'POST',
+        headers: { 'Content-Type':'application/json', 'X-CSRFToken': CSRF },
+        body: JSON.stringify({ image: imageData, subject_id: subjectId }),
+      });
+      const data = await resp.json();
+      const conf = data.confidence || 0;
+
+      if (data.success) {
+        bestResult = data;
+        bestConf   = conf;
+        break; // success on this frame — stop early
+      }
+
+      if (conf > bestConf) {
+        bestConf   = conf;
+        bestResult = data;
+      }
+    } catch(e) {
+      console.warn('Frame attempt error:', e);
+    }
+
+    if (attempt < 3) await sleep(900);
+  }
+
+  // Done scanning
+  stopCam();
+  el('scanLine').style.display = 'none';
+  setConfidence(bestConf > 0 ? bestConf : 0);
+
+  if (!bestResult) {
+    showStatus('fail','Scan Failed','Could not reach the server. Please try again.');
+    el('startBtn').disabled = false;
+    el('startBtn').innerHTML = '<i class="fas fa-video me-2"></i>Start Scan';
+    el('retryBtn').style.display = 'inline-flex';
+    return;
+  }
+
+  if (bestResult.success) {
+    el('faceRing').classList.add('detected');
+    if (bestResult.already_marked) {
+      showStatus('info','Already Recorded', bestResult.message);
+    } else {
+      showStatus('success','Attendance Marked ✓',
+        `${bestResult.message}${bestResult.time ? '  ·  ' + bestResult.time : ''}`);
+    }
+    el('startBtn').innerHTML = '<i class="fas fa-check me-2"></i>Done';
+    setTimeout(() => { window.location.href = '{% url "dashboard" %}'; }, 2200);
+  } else {
+    // Show failure status
+    showStatus('fail','Not Recognized', bestResult.message || 'Face not recognized.');
+    el('startBtn').disabled = false;
+    el('startBtn').innerHTML = '<i class="fas fa-video me-2"></i>Start Scan';
+    setHint('Tip: better lighting, face camera directly, remove glasses', 'fa-triangle-exclamation');
+    el('hintBar').style.display = 'block';
+
+    // Auto-redirect to dashboard after 3 seconds
+    if (bestResult.redirect_dashboard !== false) {
+      el('retryBtn').style.display = 'none';
+      startRedirectCountdown('{% url "dashboard" %}');
+    } else {
+      el('retryBtn').style.display = 'inline-flex';
+    }
+  }
+}
+
+function retryRecognition() {
+  el('retryBtn').style.display = 'none';
+  el('statusCard').style.display = 'none';
+  el('confWrap').style.display = 'none';
+  el('faceRing').classList.remove('detected');
+  startAndRecognize();
+}
+
+function startRedirectCountdown(url) {
+  const overlay = el('redirectOverlay');
+  const countEl = el('redirectCount');
+  overlay.style.display = 'flex';
+  let secs = 3;
+  countEl.textContent = secs;
+  const t = setInterval(() => {
+    secs--;
+    countEl.textContent = secs;
+    if (secs <= 0) {
+      clearInterval(t);
+      window.location.href = url;
+    }
+  }, 1000);
+}
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+</script>
+{% endblock %}

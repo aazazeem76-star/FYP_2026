@@ -1,0 +1,115 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ subject.name }} - FRA System{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h1 class="gradient-text mb-3">
+                <i class="fas fa-graduation-cap"></i> {{ subject.name }}
+            </h1>
+            <p class="text-muted">{{ subject.description }}</p>
+        </div>
+        <div class="col-md-4 text-end">
+            <a href="{% url 'subjects_list' %}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Subjects
+            </a>
+        </div>
+    </div>
+
+    <!-- Subject Info Card -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card glass-card">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <h6 class="text-muted mb-2">Subject Code</h6>
+                            <h4><span class="badge bg-primary p-2">{{ subject.code }}</span></h4>
+                        </div>
+                        <div class="col-md-3">
+                            <h6 class="text-muted mb-2">Teacher</h6>
+                            <h5>{{ subject.teacher.first_name }} {{ subject.teacher.last_name }}</h5>
+                        </div>
+                        <div class="col-md-3">
+                            <h6 class="text-muted mb-2">Enrolled Students</h6>
+                            <h4><i class="fas fa-users text-info"></i> {{ student_count }}</h4>
+                        </div>
+                        <div class="col-md-3">
+                            <h6 class="text-muted mb-2">Created</h6>
+                            <p>{{ subject.created_at|date:"M d, Y" }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Enrolled Students Section -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card glass-card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-users me-2"></i>Enrolled Students ({{ student_count }})
+                    </h5>
+                    {% if user.role == 'admin' %}
+                    <a href="{% url 'enroll_students' subject.id %}" class="btn btn-sm btn-primary">
+                        <i class="fas fa-user-plus"></i> Manage Students
+                    </a>
+                    {% endif %}
+                </div>
+                <div class="card-body">
+                    {% if enrolled_students %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Student ID</th>
+                                    <th>Name</th>
+                                    <th>Email</th>
+                                    <th>Phone</th>
+                                    <th>Department</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for student in enrolled_students %}
+                                <tr>
+                                    <td>{{ forloop.counter }}</td>
+                                    <td><span class="badge bg-info">{{ student.student_id }}</span></td>
+                                    <td>{{ student.first_name }} {{ student.last_name }}</td>
+                                    <td>{{ student.email }}</td>
+                                    <td>{{ student.phone|default:"-" }}</td>
+                                    <td>{{ student.department|default:"-" }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-user-slash fa-3x text-muted mb-3"></i>
+                        <h4>No Students Enrolled</h4>
+                        <p class="text-muted">
+                            {% if user.role == 'admin' %}
+                            Click "Manage Students" to enroll students in this subject.
+                            {% else %}
+                            No students have been enrolled in this subject yet.
+                            {% endif %}
+                        </p>
+                        {% if user.role == 'admin' %}
+                        <a href="{% url 'enroll_students' subject.id %}" class="btn btn-primary mt-3">
+                            <i class="fas fa-user-plus"></i> Enroll Students
+                        </a>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

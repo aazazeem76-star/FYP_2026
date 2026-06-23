@@ -1,0 +1,598 @@
+{% extends 'base.html' %}
+
+{% block title %}Generate Report - FRA System{% endblock %}
+
+{% block content %}
+<div class="container-xl py-4">
+    <div class="row justify-content-center">
+        <div class="col-xl-11 col-lg-12">
+
+            <!-- Page Header -->
+            <div class="rpt-page-header mb-4">
+                <div class="rpt-header-inner">
+                    <div class="rpt-icon-ring">
+                        <i class="fa-solid fa-file-lines"></i>
+                    </div>
+                    <div>
+                        <h2 class="mb-1 fw-700">Generate Attendance Report</h2>
+                        <p class="mb-0 opacity-75">Configure filters and export a detailed attendance report in PDF or CSV format</p>
+                    </div>
+                    <a href="{% url 'reports_list' %}" class="ms-auto btn btn-sm rpt-back-btn">
+                        <i class="fas fa-list me-1"></i> All Reports
+                    </a>
+                </div>
+            </div>
+
+            <!-- Main Card -->
+            <div class="card rpt-main-card shadow-lg">
+                <div class="card-body p-0">
+                    <form method="post" id="reportForm">
+                        {% csrf_token %}
+
+                        <div class="row g-0">
+
+                            <!-- ═══ LEFT PANEL ═══ -->
+                            <div class="col-lg-7 rpt-left-panel">
+
+                                <!-- Report Configuration -->
+                                <div class="rpt-section">
+                                    <div class="rpt-section-hdr">
+                                        <span class="rpt-dot dot-indigo"></span>
+                                        <i class="fas fa-clipboard-list rpt-s-icon"></i>
+                                        <h6 class="rpt-s-title">Report Configuration</h6>
+                                    </div>
+                                    <label for="{{ form.report_type.id_for_label }}" class="rpt-label">
+                                        <i class="fas fa-chart-bar text-primary me-2"></i>Report Type <span class="text-danger">*</span>
+                                    </label>
+                                    {{ form.report_type }}
+                                    {% if form.report_type.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.report_type.errors }}</div>
+                                    {% endif %}
+                                    <small class="rpt-hint"><i class="fas fa-info-circle me-1"></i>Choose daily, weekly, monthly or a custom date range</small>
+                                </div>
+
+                                <div class="rpt-divider"></div>
+
+                                <!-- Date Range -->
+                                <div class="rpt-section">
+                                    <div class="rpt-section-hdr">
+                                        <span class="rpt-dot dot-green"></span>
+                                        <i class="fas fa-calendar-alt rpt-s-icon" style="color:#22c55e"></i>
+                                        <h6 class="rpt-s-title">Date Range</h6>
+                                    </div>
+                                    <div class="row g-3">
+                                        <div class="col-md-6">
+                                            <label for="{{ form.start_date.id_for_label }}" class="rpt-label">
+                                                <i class="fas fa-calendar-day text-success me-2"></i>Start Date <span class="text-danger">*</span>
+                                            </label>
+                                            <div class="rpt-ig">
+                                                <span class="rpt-ig-icon"><i class="fas fa-calendar text-muted"></i></span>
+                                                {{ form.start_date }}
+                                            </div>
+                                            {% if form.start_date.errors %}<div class="invalid-feedback d-block">{{ form.start_date.errors }}</div>{% endif %}
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label for="{{ form.end_date.id_for_label }}" class="rpt-label">
+                                                <i class="fas fa-calendar-check text-danger me-2"></i>End Date <span class="text-danger">*</span>
+                                            </label>
+                                            <div class="rpt-ig">
+                                                <span class="rpt-ig-icon"><i class="fas fa-calendar text-muted"></i></span>
+                                                {{ form.end_date }}
+                                            </div>
+                                            {% if form.end_date.errors %}<div class="invalid-feedback d-block">{{ form.end_date.errors }}</div>{% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="rpt-divider"></div>
+
+                                <!-- Organisation Filter -->
+                                <div class="rpt-section">
+                                    <div class="rpt-section-hdr">
+                                        <span class="rpt-dot dot-purple"></span>
+                                        <i class="fas fa-university rpt-s-icon" style="color:#8b5cf6"></i>
+                                        <h6 class="rpt-s-title">Organisation Filter</h6>
+                                        <span class="rpt-opt-badge">Optional</span>
+                                    </div>
+                                    <div class="row g-3">
+                                        <div class="col-md-6">
+                                            <label for="id_report_department" class="rpt-label">
+                                                <i class="fas fa-building text-primary me-2"></i>Department
+                                            </label>
+                                            <select name="department" id="id_report_department" class="org-select">
+                                                <option value="">— All Departments —</option>
+                                                {% for dept in departments %}
+                                                <option value="{{ dept.id }}">{{ dept.code }} — {{ dept.name }}</option>
+                                                {% endfor %}
+                                            </select>
+                                            <small class="rpt-hint"><i class="fas fa-arrow-right me-1"></i>Leave blank for all departments</small>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label for="id_report_section" class="rpt-label">
+                                                <i class="fas fa-layer-group text-success me-2"></i>Section / Shift
+                                            </label>
+                                            <select name="section" id="id_report_section" class="org-select" disabled>
+                                                <option value="">— Select a department first —</option>
+                                            </select>
+                                            <small class="rpt-hint" id="sectionHint"><i class="fas fa-arrow-right me-1"></i>Select a department to enable</small>
+                                        </div>
+                                    </div>
+                                    <div id="sectionStudentInfo" class="d-none mt-3">
+                                        <div class="rpt-count-badge">
+                                            <i class="fas fa-users text-primary me-2"></i>
+                                            <span class="fw-semibold small" id="sectionStudentCount"></span>
+                                            <span class="text-muted small ms-auto">or pick a specific student in Optional Filters →</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                            </div><!-- /left panel -->
+
+                            <!-- Vertical divider -->
+                            <div class="rpt-vdivider d-none d-lg-block"></div>
+
+                            <!-- ═══ RIGHT PANEL ═══ -->
+                            <div class="col-lg-5 rpt-right-panel">
+
+                                <!-- Optional Filters -->
+                                <div class="rpt-section">
+                                    <div class="rpt-section-hdr">
+                                        <span class="rpt-dot dot-amber"></span>
+                                        <i class="fas fa-filter rpt-s-icon" style="color:#f59e0b"></i>
+                                        <h6 class="rpt-s-title">Optional Filters</h6>
+                                    </div>
+                                    <div class="row g-3">
+                                        <div class="col-12">
+                                            <label for="{{ form.subject.id_for_label }}" class="rpt-label">
+                                                <i class="fas fa-book text-info me-2"></i>Subject
+                                            </label>
+                                            {{ form.subject }}
+                                            {% if form.subject.errors %}<div class="invalid-feedback d-block">{{ form.subject.errors }}</div>{% endif %}
+                                            <small class="rpt-hint"><i class="fas fa-info-circle me-1"></i>Select a department first to filter subjects</small>
+                                        </div>
+                                        <div class="col-12">
+                                            <label for="{{ form.user.id_for_label }}" class="rpt-label">
+                                                <i class="fas fa-user-graduate text-warning me-2"></i>Student
+                                            </label>
+                                            {{ form.user }}
+                                            {% if form.user.errors %}<div class="invalid-feedback d-block">{{ form.user.errors }}</div>{% endif %}
+                                            <small class="rpt-hint"><i class="fas fa-arrow-right me-1"></i>Leave blank to include all students</small>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="rpt-divider"></div>
+
+                                <!-- Export Format -->
+                                <div class="rpt-section">
+                                    <div class="rpt-section-hdr">
+                                        <span class="rpt-dot dot-red"></span>
+                                        <i class="fas fa-file-export rpt-s-icon" style="color:#ef4444"></i>
+                                        <h6 class="rpt-s-title">Export Format <span class="text-danger">*</span></h6>
+                                    </div>
+                                    <div class="row g-3">
+                                        <div class="col-6">
+                                            <input type="radio" class="btn-check" name="{{ form.export_format.name }}" id="format_pdf" value="pdf" checked>
+                                            <label class="format-label w-100" for="format_pdf">
+                                                <div class="format-icon pdf-icon"><i class="fas fa-file-pdf"></i></div>
+                                                <div class="format-details">
+                                                    <h6>PDF</h6>
+                                                    <small>Formatted report</small>
+                                                </div>
+                                            </label>
+                                        </div>
+                                        <div class="col-6">
+                                            <input type="radio" class="btn-check" name="{{ form.export_format.name }}" id="format_csv" value="csv">
+                                            <label class="format-label w-100" for="format_csv">
+                                                <div class="format-icon csv-icon"><i class="fas fa-file-csv"></i></div>
+                                                <div class="format-details">
+                                                    <h6>CSV</h6>
+                                                    <small>Excel compatible</small>
+                                                </div>
+                                            </label>
+                                        </div>
+                                    </div>
+                                    {% if form.export_format.errors %}<div class="invalid-feedback d-block mt-2">{{ form.export_format.errors }}</div>{% endif %}
+                                </div>
+
+                                <div class="rpt-divider"></div>
+
+                                <!-- Info + Actions -->
+                                <div class="rpt-section">
+                                    <div class="rpt-info-strip mb-3">
+                                        <i class="fas fa-info-circle text-primary me-2 mt-1 flex-shrink-0"></i>
+                                        <span class="small">Report downloads immediately. View past reports on the
+                                            <a href="{% url 'reports_list' %}" class="rpt-link">Reports List</a> page.
+                                        </span>
+                                    </div>
+                                    <div class="d-flex gap-2">
+                                        <a href="{% url 'reports_list' %}" class="btn rpt-cancel-btn flex-fill">
+                                            <i class="fas fa-times me-2"></i>Cancel
+                                        </a>
+                                        <button type="submit" class="btn btn-generate flex-fill">
+                                            <i class="fas fa-cogs me-2"></i>Generate Report
+                                        </button>
+                                    </div>
+                                </div>
+
+                            </div><!-- /right panel -->
+                        </div><!-- /row g-0 -->
+                    </form>
+                </div>
+            </div><!-- /card -->
+
+        </div>
+    </div>
+</div>
+
+<style>
+/* ── Page Header ─────────────────────────────── */
+.rpt-page-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 18px;
+    padding: 1.75rem 2rem;
+    color: #fff;
+    box-shadow: 0 10px 40px rgba(102,126,234,.35);
+}
+.rpt-header-inner { display:flex; align-items:center; gap:1.25rem; flex-wrap:wrap; }
+.rpt-icon-ring {
+    width:60px; height:60px;
+    background:rgba(255,255,255,.2);
+    border-radius:16px;
+    display:flex; align-items:center; justify-content:center;
+    font-size:1.7rem; flex-shrink:0;
+    border:1.5px solid rgba(255,255,255,.3);
+}
+.rpt-page-header h2 { font-size:1.55rem; color:#fff; }
+.rpt-page-header p  { font-size:.9rem; }
+.fw-700 { font-weight:700; }
+.rpt-back-btn {
+    background:rgba(255,255,255,.15);
+    color:#fff;
+    border:1.5px solid rgba(255,255,255,.3);
+    border-radius:10px; font-size:.85rem;
+    padding:.45rem 1rem; white-space:nowrap;
+    transition:background .2s;
+}
+.rpt-back-btn:hover { background:rgba(255,255,255,.28); color:#fff; }
+
+/* ── Main Card ────────────────────────────────── */
+.rpt-main-card {
+    border: 1.5px solid rgba(255,255,255,.08);
+    border-radius:18px; overflow:hidden;
+    transition: box-shadow .35s ease, border-color .35s ease, transform .35s ease;
+}
+.rpt-main-card:hover {
+    border-color: rgba(102,126,234,.35);
+    box-shadow: 0 8px 48px rgba(102,126,234,.18), 0 2px 16px rgba(0,0,0,.18);
+    transform: translateY(-2px);
+}
+
+/* ── Panels ───────────────────────────────────── */
+.rpt-left-panel  { padding:2rem; }
+.rpt-right-panel { padding:2rem; background:rgba(255,255,255,.02); transition:background .3s; }
+.rpt-main-card:hover .rpt-right-panel { background:rgba(102,126,234,.03); }
+.rpt-vdivider    { width:1px; background:rgba(255,255,255,.08); margin:1.5rem 0; transition:background .3s; }
+.rpt-main-card:hover .rpt-vdivider { background:rgba(102,126,234,.25); }
+
+/* ── Section headers ──────────────────────────── */
+.rpt-section {
+    margin-bottom:.25rem;
+    padding:.75rem;
+    border-radius:12px;
+    transition: background .3s ease;
+}
+.rpt-section:hover {
+    background: rgba(102,126,234,.05);
+}
+.rpt-section-hdr {
+    display:flex; align-items:center; gap:.5rem;
+    margin-bottom:1rem; padding-bottom:.65rem;
+    border-bottom:1.5px solid rgba(102,126,234,.18);
+}
+.rpt-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+.dot-indigo { background:#667eea; }
+.dot-green  { background:#22c55e; }
+.dot-purple { background:#8b5cf6; }
+.dot-amber  { background:#f59e0b; }
+.dot-red    { background:#ef4444; }
+.rpt-s-icon  { font-size:1rem; color:#667eea; }
+.rpt-s-title { margin:0; font-size:1rem; font-weight:650; }
+.rpt-divider { height:1px; background:rgba(255,255,255,.06); margin:1.25rem 0; }
+
+/* ── Labels / hints ───────────────────────────── */
+.rpt-label { display:block; font-size:.88rem; font-weight:600; margin-bottom:.4rem; }
+.rpt-hint  { font-size:.78rem; color:#8b99b5; margin-top:.3rem; display:block; }
+
+/* ── Form controls ────────────────────────────── */
+.form-control, .form-select {
+    background:rgba(255,255,255,.07);
+    border:1.5px solid rgba(255,255,255,.13);
+    color:#e2e8f0; padding:.7rem 1rem;
+    border-radius:10px; font-size:.92rem;
+    font-weight:450;
+    transition:border-color .25s, box-shadow .25s, background .25s, color .25s;
+    width:100%;
+}
+.form-control:hover, .form-select:hover {
+    background:rgba(255,255,255,.13);
+    border-color:rgba(102,126,234,.55);
+    color:#fff;
+    box-shadow:0 2px 12px rgba(102,126,234,.12);
+}
+.form-control:focus, .form-select:focus {
+    background:rgba(255,255,255,.14);
+    border-color:#667eea; color:#fff;
+    box-shadow:0 0 0 3px rgba(102,126,234,.22), 0 2px 16px rgba(102,126,234,.15);
+    outline:none;
+}
+select.form-select option {
+    background:#1e2235;
+    color:#e2e8f0;
+}
+input[type="date"] {
+    color-scheme:dark;
+    color:#e2e8f0;
+}
+
+/* Input group */
+.rpt-ig { display:flex; }
+.rpt-ig-icon {
+    display:flex; align-items:center; justify-content:center;
+    width:42px;
+    background:rgba(255,255,255,.04);
+    border:1.5px solid rgba(255,255,255,.1);
+    border-right:none; border-radius:10px 0 0 10px;
+}
+.rpt-ig .form-control,
+.rpt-ig .form-select {
+    border-left:none; border-radius:0 10px 10px 0; flex:1;
+}
+
+/* ── Org dropdowns (always light) ──────────────── */
+.org-select {
+    display:block; width:100%;
+    padding:.72rem 2.5rem .72rem 1rem;
+    font-size:.92rem; font-weight:500; color:#1f2937;
+    background-color:#fff;
+    background-image:url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23667eea' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 5l6 6 6-6'/%3e%3c/svg%3e");
+    background-repeat:no-repeat;
+    background-position:right .85rem center;
+    background-size:14px 10px;
+    border:1.5px solid #d1d5db; border-radius:10px;
+    appearance:none; -webkit-appearance:none;
+    box-shadow:0 1px 4px rgba(0,0,0,.06);
+    transition:border-color .25s, box-shadow .25s, background .25s; cursor:pointer;
+}
+.org-select:hover {
+    background-color:#f5f3ff;
+    border-color:#a78bfa;
+    box-shadow:0 2px 12px rgba(102,126,234,.14);
+}
+.org-select:focus {
+    outline:none;
+    background-color:#f0ebff;
+    border-color:#667eea;
+    box-shadow:0 0 0 3px rgba(102,126,234,.2), 0 2px 12px rgba(102,126,234,.12);
+}
+.org-select:disabled { background:#f3f4f6; color:#9ca3af; border-color:#e5e7eb; cursor:not-allowed; opacity:1; box-shadow:none; }
+.org-select option { color:#1f2937; background:#fff; }
+
+/* Count badge */
+.rpt-count-badge {
+    display:flex; align-items:center; gap:.5rem;
+    padding:.6rem 1rem;
+    background:rgba(102,126,234,.1);
+    border:1px solid rgba(102,126,234,.25);
+    border-radius:10px; font-size:.85rem;
+}
+
+/* ── Export format cards ─────────────────────── */
+.format-label {
+    display:flex; align-items:center; padding:1rem;
+    background:rgba(255,255,255,.04);
+    border:2px solid rgba(255,255,255,.1);
+    border-radius:12px; cursor:pointer;
+    transition:background .25s, border-color .25s, transform .25s;
+}
+.format-label:hover { background:rgba(255,255,255,.07); border-color:rgba(102,126,234,.5); transform:translateY(-2px); }
+.btn-check:checked + .format-label { background:rgba(102,126,234,.15); border-color:#667eea; box-shadow:0 0 0 3px rgba(102,126,234,.15); }
+.format-icon { width:44px; height:44px; border-radius:10px; display:flex; align-items:center; justify-content:center; margin-right:.85rem; font-size:1.3rem; flex-shrink:0; }
+.pdf-icon { background:rgba(220,38,38,.15); color:#ef4444; }
+.csv-icon { background:rgba(34,197,94,.15);  color:#22c55e; }
+.format-details h6    { margin:0; font-size:.92rem; font-weight:700; }
+.format-details small { color:#8b99b5; font-size:.78rem; }
+
+/* ── Info strip + buttons ────────────────────── */
+.rpt-info-strip {
+    display:flex; align-items:flex-start; gap:.4rem;
+    background:rgba(59,130,246,.08);
+    border-left:3px solid #3b82f6;
+    border-radius:0 8px 8px 0;
+    padding:.65rem .9rem; color:#93c5fd;
+}
+.rpt-link { color:#60a5fa; font-weight:600; text-decoration:underline; }
+.rpt-cancel-btn {
+    background:rgba(255,255,255,.05);
+    border:1.5px solid rgba(255,255,255,.15);
+    color:inherit; border-radius:10px; font-weight:600;
+    transition:background .2s;
+}
+.rpt-cancel-btn:hover { background:rgba(255,255,255,.1); }
+.btn-generate {
+    background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);
+    border:none; border-radius:10px; font-weight:700; color:#fff;
+    box-shadow:0 5px 20px rgba(102,126,234,.4);
+    transition:transform .25s, box-shadow .25s;
+}
+.btn-generate:hover { transform:translateY(-2px); box-shadow:0 8px 28px rgba(102,126,234,.55); color:#fff; }
+
+/* Optional badge */
+.rpt-opt-badge {
+    font-size:.7rem; font-weight:600;
+    padding:.2rem .55rem; border-radius:20px;
+    background:rgba(139,92,246,.15); color:#a78bfa;
+    border:1px solid rgba(139,92,246,.3);
+}
+
+/* ── Responsive ──────────────────────────────── */
+@media (max-width:991px) {
+    .rpt-left-panel, .rpt-right-panel { padding:1.5rem; }
+    .rpt-right-panel { border-top:1px solid rgba(255,255,255,.07); }
+}
+@media (max-width:576px) {
+    .rpt-page-header { padding:1.25rem; }
+    .rpt-page-header h2 { font-size:1.2rem; }
+    .rpt-back-btn { display:none; }
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+    /* ── Element refs ─────────────────────────────────────── */
+    const deptSel    = document.getElementById('id_report_department');
+    const secSel     = document.getElementById('id_report_section');
+    const secHint    = document.getElementById('sectionHint');
+    const secInfo    = document.getElementById('sectionStudentInfo');
+    const secCount   = document.getElementById('sectionStudentCount');
+    const subjSel    = document.getElementById('{{ form.subject.id_for_label }}');
+    const userSel    = document.getElementById('{{ form.user.id_for_label }}');
+
+    /* Store all original subject/user options for full reset */
+    const allSubjOpts = subjSel ? Array.from(subjSel.options).map(o => ({value:o.value, text:o.text})) : [];
+    const allUserOpts = userSel ? Array.from(userSel.options).map(o => ({value:o.value, text:o.text})) : [];
+
+    /* ── Page-load: clear subjects/students if no department pre-selected ── */
+    if (!deptSel.value) {
+        if (subjSel) subjSel.innerHTML = '<option value="">— Select a department first —</option>';
+        if (userSel) userSel.innerHTML = '<option value="">— All Students —</option>';
+    }
+
+    /* ── 1. Department changes ────────────────────────────── */
+    deptSel.addEventListener('change', async function () {
+        const deptId = this.value;
+        resetSection();
+        resetSubjects();
+        resetStudents();
+        secInfo.classList.add('d-none');
+
+        if (!deptId) return;
+
+        /* Load sections */
+        secSel.innerHTML = '<option value="">Loading…</option>';
+        try {
+            const r = await fetch(`/api/sections-by-department/${deptId}/`);
+            const d = await r.json();
+            secSel.innerHTML = '<option value="">— All Sections —</option>';
+            d.sections.forEach(s => {
+                const emoji = {Morning:'🌅','Shifted-Morning':'🌤',Evening:'🌙'}[s.name] || '⭐';
+                secSel.innerHTML += `<option value="${s.id}">${emoji} ${s.name}</option>`;
+            });
+            secSel.disabled = false;
+            secHint.innerHTML = '<i class="fas fa-arrow-right small"></i> Leave blank to include all sections';
+        } catch(e) {
+            secSel.innerHTML = '<option value="">Error loading sections</option>';
+        }
+
+        /* Filter subjects by department only */
+        await filterSubjects(deptId, '');
+    });
+
+    /* ── 2. Section changes ───────────────────────────────── */
+    secSel.addEventListener('change', async function () {
+        const sectionId = this.value;
+        const deptId    = deptSel.value;
+        resetStudents();
+
+        /* Filter subjects by dept + section */
+        await filterSubjects(deptId, sectionId);
+
+        /* Show section student count badge */
+        if (!sectionId) {
+            secInfo.classList.add('d-none');
+            return;
+        }
+        try {
+            const r = await fetch(`/api/students-by-section/${sectionId}/`);
+            const d = await r.json();
+            secCount.textContent = `${d.students.length} student${d.students.length !== 1 ? 's' : ''} in this section`;
+            secInfo.classList.remove('d-none');
+        } catch(e) { secInfo.classList.add('d-none'); }
+    });
+
+    /* ── 3. Subject changes ───────────────────────────────── */
+    if (subjSel) {
+        subjSel.addEventListener('change', async function () {
+            const subjectId = this.value;
+            resetStudents();
+
+            if (!subjectId) return;
+
+            try {
+                const r = await fetch(`/api/students-by-subject/${subjectId}/`);
+                const d = await r.json();
+
+                if (userSel) {
+                    userSel.innerHTML = '<option value="">— Select Student —</option>';
+                    d.students.forEach(s => {
+                        userSel.innerHTML += `<option value="${s.id}">${s.name}</option>`;
+                    });
+                    if (d.students.length === 0) {
+                        userSel.innerHTML = '<option value="">No enrolled students found</option>';
+                    }
+                }
+            } catch(e) { /* silent */ }
+        });
+    }
+
+    /* ── Helpers ──────────────────────────────────────────── */
+    async function filterSubjects(deptId, sectionId) {
+        if (!subjSel) return;
+        if (!deptId && !sectionId) { resetSubjects(); return; }
+
+        const params = new URLSearchParams();
+        if (deptId)    params.set('dept', deptId);
+        if (sectionId) params.set('section', sectionId);
+
+        try {
+            const r = await fetch(`/api/subjects-by-filter/?${params}`);
+            const d = await r.json();
+            subjSel.innerHTML = '<option value="">— All Subjects —</option>';
+            d.subjects.forEach(s => {
+                subjSel.innerHTML += `<option value="${s.id}">${s.label}</option>`;
+            });
+            if (d.subjects.length === 0) {
+                subjSel.innerHTML = '<option value="">No subjects for this selection</option>';
+            }
+            resetStudents();
+        } catch(e) { resetSubjects(); }
+    }
+
+    function resetSection() {
+        secSel.innerHTML = '<option value="">— Select a department first —</option>';
+        secSel.disabled = true;
+        secHint.innerHTML = '<i class="fas fa-arrow-right small"></i> Select a department to enable';
+    }
+
+    function resetSubjects() {
+        if (!subjSel) return;
+        subjSel.innerHTML = '<option value="">— All Subjects —</option>';
+        allSubjOpts.forEach(o => {
+            if (o.value === '') return;
+            subjSel.innerHTML += `<option value="${o.value}">${o.text}</option>`;
+        });
+    }
+
+    function resetStudents() {
+        if (!userSel) return;
+        userSel.innerHTML = '<option value="">— All Students —</option>';
+        allUserOpts.forEach(o => {
+            if (o.value === '') return;
+            userSel.innerHTML += `<option value="${o.value}">${o.text}</option>`;
+        });
+    }
+})();
+</script>
+{% endblock %}
